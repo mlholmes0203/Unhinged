@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <title>Unhinged Replay</title>
 <style>
-  /* Layout: scoreboard on top, a wide field with moving dots, arcade popups across it, announcer box and controls underneath. Single dark look, carried over from the first tracker. */
+  /* Layout: game picker, scoreboard, wide field with moving dots and arcade popups, announcer box, controls. Single dark look carried over from the first tracker. */
   :root {
     color-scheme: dark;
     --bg: #111; --fg: #fff; --gold: #f2a900; --field: #2e7d32;
@@ -17,7 +17,8 @@
     --pixel: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
     --mono: ui-monospace, 'Courier New', monospace;
   }
-  body { background: var(--bg); color: var(--fg); font-family: var(--mono); text-align: center; margin: 0; padding: 10px 16px 24px; }
+  html, body { background: var(--bg); }
+  body { color: var(--fg); font-family: var(--mono); text-align: center; margin: 0; padding: 10px 16px 24px; }
   .wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   h1 { color: var(--gold); font-size: 20px; margin: 5px 0; }
 
@@ -33,8 +34,8 @@
   #sit { font-family: var(--pixel); font-size: 9px; color: var(--dim); line-height: 1.6; min-height: 1.6em; }
 
   #field { background: var(--field); border: 4px solid var(--fg); height: 190px; width: 100%; position: relative; overflow: hidden; border-radius: 8px; box-sizing: border-box; --dur: .8s; }
-  .ez { position: absolute; top: 0; bottom: 0; width: 8%; display: flex; align-items: center; justify-content: center; }
-  .ez span { font-family: var(--pixel); font-size: 8px; color: rgba(255,255,255,.75); writing-mode: vertical-rl; letter-spacing: 1px; }
+  .ez { position: absolute; top: 0; bottom: 0; width: 8%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .ez span { font-family: var(--pixel); font-size: 8px; color: rgba(255,255,255,.75); writing-mode: vertical-rl; letter-spacing: 1px; white-space: nowrap; }
   #ezL { left: 0; background: rgba(113,28,145,.75); border-right: 2px solid var(--fg); }
   #ezR { right: 0; background: rgba(234,0,217,.55); border-left: 2px solid var(--fg); }
   #ezL span { transform: rotate(180deg); }
@@ -75,10 +76,14 @@
   button[aria-pressed="false"] { opacity: .55; }
   button:disabled { opacity: .35; cursor: default; }
   button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
-  select { background: var(--control); color: var(--fg); border: 1px solid var(--control-edge); padding: 8px; border-radius: 5px; font-size: 16px; min-height: 44px; }
+  select { background: var(--control); color: var(--fg); border: 1px solid var(--control-edge); padding: 8px; border-radius: 5px; font-size: 16px; min-height: 44px; max-width: 100%; }
+  #gameSel { flex: 1 1 220px; min-width: 0; }
 
+  #status { font-size: 13px; color: var(--dim); min-height: 1.3em; line-height: 1.4; }
+  #status.bad { color: var(--red); }
+  #status.ok { color: var(--green); }
   #box { background: var(--panel); border: 3px solid var(--edge); border-radius: 8px; min-height: 80px; padding: 15px; box-sizing: border-box; font-size: 16px; line-height: 1.4; color: var(--readout); display: flex; align-items: center; justify-content: center; white-space: pre-line; overflow-wrap: anywhere; }
-  #feed { font-size: 12px; color: var(--dim); min-height: 2.8em; line-height: 1.4; }
+  #feed { font-size: 12px; color: var(--dim); min-height: 2.8em; line-height: 1.4; overflow-wrap: anywhere; }
   #scrub { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--dim); }
   input[type=range] { width: 100%; accent-color: var(--gold); margin: 0; min-height: 32px; }
 
@@ -89,6 +94,7 @@
   #msg { font-size: 13px; margin: 8px 0 0; min-height: 1.2em; }
   #msg.bad { color: var(--red); }
   #msg.ok { color: var(--green); }
+  .fine { font-size: 11px; color: var(--dim); line-height: 1.5; }
 
   @media (prefers-reduced-motion: reduce) {
     .dot, #ball, .mark, #overlay { transition: none; }
@@ -98,9 +104,14 @@
 </head>
 <body>
 
-
 <div class="wrap">
   <h1>🏈 UNHINGED REPLAY 🏈</h1>
+
+  <div class="row">
+    <select id="weekSel" aria-label="Week"></select>
+    <select id="gameSel" aria-label="Game"><option value="sample">Sample game (made-up teams)</option></select>
+  </div>
+  <div id="status" role="status">Loading this week's games…</div>
 
   <div id="board">
     <div class="team" id="tA"><span class="tn" id="nA">WOL</span><span class="ts" id="sA">0</span></div>
@@ -126,6 +137,7 @@
     <button class="ctl primary" id="playBtn">▶ PLAY</button>
     <button class="ctl" id="nextBtn">NEXT PLAY</button>
     <button class="ctl" id="speedBtn">SPEED 1x</button>
+    <button class="ctl" id="liveBtn" aria-pressed="false" hidden>FOLLOW LIVE</button>
   </div>
 
   <div class="row">
@@ -138,7 +150,7 @@
     <button class="ctl" id="voiceBtn" aria-pressed="true">VOICE ON</button>
   </div>
 
-  <div id="box" aria-live="polite">Pick an announcer, tap PLAY, and let the madness start.</div>
+  <div id="box" aria-live="polite">Pick a game and an announcer, tap PLAY, and let the madness start.</div>
   <div id="feed"></div>
 
   <div id="scrub">
@@ -146,6 +158,11 @@
     <input type="range" id="slider" min="0" max="0" value="0">
     <div class="row"><button class="ctl" id="restartBtn">⟲ RESTART</button></div>
   </div>
+
+  <details id="diagBox">
+    <summary>Data report (send this to Claude if something looks off)</summary>
+    <textarea id="diag" rows="8" readonly spellcheck="false"></textarea>
+  </details>
 
   <details id="loader">
     <summary>Load your own plays (JSON)</summary>
@@ -158,149 +175,356 @@
     </div>
     <p id="msg" role="status"></p>
   </details>
+
+  <p class="fine">Play data comes from ESPN's public feed and may be delayed or change without notice. Not affiliated with ESPN or the NFL.</p>
 </div>
+
+<script id="espn">
+/* Turns ESPN's game summary into replay plays. Pure function, no page code. */
+(function (root) {
+  'use strict';
+  function num(v) { if (v === null || v === undefined || v === '') return NaN; var n = Number(v); return isFinite(n) ? n : NaN; }
+  function r1(x) { return Math.round(x * 10) / 10; }
+  function clamp(x) { return Math.max(0, Math.min(100, x)); }
+
+  function teamInfo(j) {
+    var out = {};
+    var comps = (j && j.header && j.header.competitions && j.header.competitions[0] && j.header.competitions[0].competitors) || [];
+    if (!comps.length && j && j.boxscore && j.boxscore.teams) {
+      comps = j.boxscore.teams.map(function (t) { return { homeAway: t.homeAway, team: t.team }; });
+    }
+    comps.forEach(function (c) {
+      var side = c.homeAway === 'home' ? 'H' : (c.homeAway === 'away' ? 'A' : null);
+      if (!side || !c.team) return;
+      out[side] = {
+        id: String(c.team.id),
+        short: String(c.team.abbreviation || side).toUpperCase().slice(0, 4),
+        name: String(c.team.shortDisplayName || c.team.name || c.team.displayName || c.team.abbreviation || side)
+      };
+    });
+    return out;
+  }
+
+  function idOf(o) {
+    if (!o) return '';
+    if (o.id !== undefined && o.id !== null) return String(o.id);
+    if (o.$ref) { var m = String(o.$ref).match(/teams\/(\d+)/); if (m) return m[1]; }
+    return '';
+  }
+
+  function collectPlays(j) {
+    var out = [];
+    var d = j && j.drives;
+    if (d) {
+      var list = (d.previous || []).concat(d.current ? [d.current] : []);
+      list.forEach(function (dr) { (dr.plays || []).forEach(function (p) { out.push({ p: p, drive: dr }); }); });
+    }
+    if (!out.length && j && Array.isArray(j.plays)) j.plays.forEach(function (p) { out.push({ p: p, drive: null }); });
+    return out;
+  }
+
+  function kindOf(tt, period) {
+    if (/coin toss/.test(tt)) return 'skip';
+    if (/extra point|two.?point|2.?point|conversion/.test(tt)) return 'xp';
+    if (/end of game|end game/.test(tt)) return 'final';
+    if (/end of half|halftime/.test(tt)) return 'half';
+    if (/end period|end of quarter|end quarter/.test(tt)) return period === 2 ? 'half' : (period >= 4 ? 'final' : 'qend');
+    if (/timeout|two.?minute/.test(tt)) return 'to';
+    if (/penalty/.test(tt)) return 'pen';
+    if (/touchdown/.test(tt)) return 'td';
+    if (/kickoff/.test(tt)) return 'kickoff';
+    if (/punt/.test(tt)) return 'punt';
+    if (/field goal/.test(tt)) return (/good|made/.test(tt) && !/miss|no good|block/.test(tt)) ? 'fg' : 'fgmiss';
+    if (/sack/.test(tt)) return 'sack';
+    if (/interception/.test(tt)) return 'int';
+    if (/fumble/.test(tt)) return 'fumble';
+    if (/safety/.test(tt)) return 'safety';
+    if (/incomplet/.test(tt)) return 'inc';
+    if (/pass/.test(tt)) return 'pass';
+    if (/rush|run|scramble/.test(tt)) return 'rush';
+    return null;
+  }
+
+  function adaptSummary(j) {
+    var teams = teamInfo(j);
+    var keys = j && typeof j === 'object' ? Object.keys(j).slice(0, 25).join(', ') : String(j);
+    if (!teams.A || !teams.H) throw new Error('Could not find the two teams in the data. Top-level keys: ' + keys);
+    var awayId = teams.A.id, homeId = teams.H.id;
+    var outTeams = { A: { name: teams.A.name, short: teams.A.short }, H: { name: teams.H.name, short: teams.H.short } };
+    var raw = collectPlays(j);
+    var rep = { skipped: {}, noGeo: 0, kinds: {}, total: raw.length };
+
+    function sideOf(id) { id = (id === null || id === undefined) ? '' : String(id); return id === awayId ? 'A' : (id === homeId ? 'H' : null); }
+    function spotX(spot, fallbackSide) {
+      if (!spot) return NaN;
+      var side = sideOf(idOf(spot.team)) || fallbackSide;
+      var yte = num(spot.yardsToEndzone);
+      if (side && isFinite(yte)) return side === 'A' ? 100 - yte : yte;
+      var pt = String(spot.possessionText || '').trim();
+      var m = /^([A-Za-z]{2,4})\s+(\d{1,2})$/.exec(pt);
+      if (m) {
+        var n = +m[2], ab = m[1].toUpperCase();
+        if (ab === teams.A.short) return n;
+        if (ab === teams.H.short) return 100 - n;
+      }
+      if (pt === '50') return 50;
+      return NaN;
+    }
+
+    var plays = [], lastEmit = null, prevH = 0, prevA = 0, curOff = 'A', seen = {};
+    var DOWNKINDS = ['rush', 'pass', 'inc', 'sack', 'pen', 'td', 'int', 'fumble', 'safety', 'fg', 'fgmiss', 'punt'];
+
+    raw.forEach(function (it) {
+      var p = it.p || {};
+      if (p.id !== undefined && p.id !== null) { if (seen[p.id]) return; seen[p.id] = 1; }
+      var tt = String((p.type && (p.type.text || p.type.abbreviation)) || '').toLowerCase();
+      var txt = String(p.text || p.shortText || '').replace(/\s+/g, ' ').trim();
+      var period = num(p.period && p.period.number !== undefined ? p.period.number : p.period);
+      if (!isFinite(period)) period = 1;
+      var clock = p.clock && p.clock.displayValue !== undefined ? p.clock.displayValue : p.clock;
+      clock = (clock === null || clock === undefined || typeof clock === 'object') ? '' : String(clock);
+      var hs = num(p.homeScore), as = num(p.awayScore);
+      var dH = isFinite(hs) ? Math.max(0, hs - prevH) : 0;
+      var dA = isFinite(as) ? Math.max(0, as - prevA) : 0;
+      if (isFinite(hs)) prevH = hs;
+      if (isFinite(as)) prevA = as;
+
+      var k = kindOf(tt, period);
+      if (k === 'xp' || k === 'skip' || k === null) {
+        if (k === null || k === 'skip') rep.skipped[tt || '(no type)'] = (rep.skipped[tt || '(no type)'] || 0) + 1;
+        if ((dH > 0 || dA > 0) && lastEmit) { lastEmit.p += (dH || dA); if (!lastEmit.s) lastEmit.s = dH ? 'H' : 'A'; }
+        return;
+      }
+
+      var startSpot = p.start || null, endSpot = p.end || null;
+      var offSide = sideOf(idOf(startSpot && startSpot.team)) || sideOf(idOf(p.team)) || sideOf(it.drive && idOf(it.drive.team)) || curOff;
+      var recvSide = sideOf(idOf(endSpot && endSpot.team));
+      var o = offSide, a, b;
+      var struct = (k === 'qend' || k === 'half' || k === 'final' || k === 'to');
+
+      if (struct) {
+        o = lastEmit ? lastEmit.o : 'A';
+        a = lastEmit ? lastEmit.b : 50;
+        b = a;
+        if (k === 'half' || k === 'final') { a = 50; b = 50; }
+      } else if (k === 'kickoff') {
+        o = recvSide ? (recvSide === 'A' ? 'H' : 'A') : offSide;
+        a = (o === 'A') ? 35 : 65;
+        b = spotX(endSpot, o === 'A' ? 'H' : 'A');
+        if (!isFinite(b)) b = (o === 'A') ? 75 : 25;
+      } else {
+        a = spotX(startSpot, offSide);
+        if (!isFinite(a) && lastEmit) a = lastEmit.b;
+        if (!isFinite(a)) { rep.noGeo++; return; }
+        var dir0 = o === 'A' ? 1 : -1;
+        b = spotX(endSpot, recvSide || offSide);
+        if (!isFinite(b)) { var sy = num(p.statYardage); b = a + dir0 * (isFinite(sy) ? sy : (k === 'punt' ? 40 : 0)); }
+      }
+
+      var s, pts = 0;
+      if (dH > 0 || dA > 0) { if (dH >= dA) { s = 'H'; pts = dH; } else { s = 'A'; pts = dA; } }
+      if (k === 'td') {
+        if (s && s !== o) o = s;
+        b = o === 'A' ? 100 : 0;
+      }
+      if (k === 'fg') b = o === 'A' ? 100 : 0;
+
+      var down = num(startSpot && startSpot.down), dist = num(startSpot && startSpot.distance);
+      var dn = (DOWNKINDS.indexOf(k) >= 0 && down > 0) ? down : 0;
+      var ytg = (dn > 0 && isFinite(dist)) ? dist : 0;
+
+      var out = { q: period, c: clock, o: o, k: k, a: r1(clamp(a)), b: r1(clamp(b)), dn: dn, ytg: ytg, t: txt, s: s, p: pts };
+      plays.push(out);
+      lastEmit = out;
+      rep.kinds[k] = (rep.kinds[k] || 0) + 1;
+      if (!struct) curOff = recvSide || offSide;
+    });
+
+    var lines = [];
+    lines.push('Plays in feed: ' + rep.total + ' · shown: ' + plays.length);
+    lines.push('Kinds: ' + Object.keys(rep.kinds).map(function (x) { return x + ' ' + rep.kinds[x]; }).join(', '));
+    var sk = Object.keys(rep.skipped).map(function (x) { return x + ' (' + rep.skipped[x] + ')'; }).join(', ');
+    if (sk) lines.push('Skipped types: ' + sk);
+    if (rep.noGeo) lines.push('Plays dropped (no yard line): ' + rep.noGeo);
+    lines.push('Top-level keys: ' + keys);
+    if (raw.length) {
+      var pick = raw[Math.min(raw.length - 1, 2)].p;
+      var sample = ''; try { sample = JSON.stringify(pick); } catch (e) {}
+      lines.push('Sample raw play: ' + sample.slice(0, 1400));
+    }
+    return { teams: outTeams, plays: plays, report: lines.join('\n') };
+  }
+  root.ESPN = { adaptSummary: adaptSummary };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
 
 <script>
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
+  const API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
   const FL = 8, FW = 84;                      // field starts 8% in and spans 84% of the width
   const xp = x => FL + x * FW / 100;
   const clampX = x => Math.max(-9, Math.min(109, x));
   const KINDS = ['kickoff','rush','pass','inc','sack','int','fumble','punt','fg','fgmiss','td','pen','to','qend','half','final','safety'];
+  const SCRIMMAGE = ['rush','pass','inc','sack'];
   const TEAMS0 = { A: { name: 'Wolves', short: 'WOL' }, H: { name: 'Gators', short: 'GAT' } };
   let TEAMS = JSON.parse(JSON.stringify(TEAMS0));
 
   /* ---------- Sample game (made-up teams, not a real NFL game) ---------- */
   // [quarter, clock, offense A/H, kind, from, to, down, yards to go, text, scoring team, points]
   const SAMPLE_ROWS = [
-    [1,"15:00","H","kickoff",65,25,0,0,"Gators kick deep. The Wolves start at the WOL 25."],
-    [1,"14:55","A","rush",25,29,1,10,"Pike up the middle for 4."],
-    [1,"14:20","A","inc",29,29,2,6,"Hanson throws it over Cole's head. Incomplete."],
-    [1,"14:05","A","pass",29,40,3,6,"Hanson finds Burke for 11. First down."],
-    [1,"13:30","A","rush",40,43,1,10,"Pike picks up 3."],
-    [1,"12:50","A","sack",43,35,2,7,"The Gators bring the house. Hanson is sacked for a loss of 8."],
-    [1,"12:10","A","pass",35,44,3,15,"Hanson to Cole for 9. Well short of the sticks."],
-    [1,"11:35","A","punt",44,92,4,6,"Punt. Fair catch at the GAT 8."],
-    [1,"11:20","H","rush",92,89,1,10,"Landry runs for 3."],
-    [1,"10:45","H","pass",89,67,2,7,"Boudreaux to Fontenot for 22!"],
-    [1,"10:05","H","pass",67,34,1,10,"Bomb to Thibodeaux for 33!"],
-    [1,"9:25","H","rush",34,28,1,10,"Landry bounces outside for 6."],
-    [1,"8:50","H","inc",28,28,2,4,"Boudreaux's pass falls incomplete."],
-    [1,"8:15","H","pass",28,24,3,4,"Fontenot grabs 4 for the first down."],
-    [1,"7:30","H","rush",24,12,1,10,"Landry breaks free for 12!"],
-    [1,"6:45","H","td",12,0,1,10,"Boudreaux hits Thibodeaux in the corner. Touchdown, Gators!","H",7],
-    [1,"6:40","H","kickoff",65,22,0,0,"Kickoff returned to the WOL 22."],
-    [1,"6:10","A","pass",22,29,1,10,"Hanson to Pike for 7."],
-    [1,"5:30","A","rush",29,34,2,3,"Pike for 5 and a first down."],
-    [1,"4:50","A","int",34,48,1,10,"Hanson's pass is picked off by the Gators! Returned to the 48."],
-    [1,"4:20","H","rush",48,46,1,10,"Landry for 2."],
-    [1,"3:35","H","fumble",46,53,2,8,"Boudreaux is hit and fumbles. The Wolves recover at the 53."],
-    [1,"3:00","A","pass",53,69,1,10,"Hanson to Cole for 16."],
-    [1,"2:20","A","rush",69,74,1,10,"Pike for 5."],
-    [1,"1:35","A","pass",74,83,2,5,"Hanson hits Burke for 9. First down."],
-    [1,"0:00","A","qend",83,83,0,0,"End of the 1st quarter."],
-    [2,"15:00","A","rush",83,85,1,10,"Pike for 2."],
-    [2,"14:20","A","pen",85,75,2,8,"Flag! Holding on the Wolves. 10 yards."],
-    [2,"13:40","A","pass",75,81,2,18,"Hanson to Cole for 6."],
-    [2,"12:55","A","inc",81,81,3,12,"Hanson overthrows Burke. Incomplete."],
-    [2,"12:10","A","fg",81,100,4,12,"36-yard field goal is good.","A",3],
-    [2,"12:05","A","kickoff",35,75,0,0,"Kickoff returned to the GAT 25."],
-    [2,"11:30","H","rush",75,70,1,10,"Landry for 5."],
-    [2,"10:50","H","pass",70,30,2,5,"Boudreaux goes deep to Thibodeaux for 40!"],
-    [2,"10:10","H","rush",30,22,1,10,"Landry for 8."],
-    [2,"9:30","H","inc",22,22,2,2,"Incomplete. Fontenot drops it."],
-    [2,"8:55","H","rush",22,21,3,2,"Landry is stuffed for 1."],
-    [2,"8:15","H","rush",21,19,4,1,"The Gators go for it. Landry gets 2 and the first down."],
-    [2,"7:30","H","td",19,0,1,10,"Boudreaux rolls right and finds Fontenot. Touchdown, Gators!","H",7],
-    [2,"0:00","A","half",50,50,0,0,"End of the first half."],
-    [3,"15:00","A","kickoff",35,70,0,0,"Second half kickoff, returned to the GAT 30."],
-    [3,"14:25","H","pass",70,45,1,10,"Boudreaux to Fontenot for 25!"],
-    [3,"13:40","H","sack",45,54,1,10,"The Wolves get home. Boudreaux is sacked for a loss of 9."],
-    [3,"12:55","H","pass",54,34,2,19,"Boudreaux to Thibodeaux for 20 and a first down!"],
-    [3,"12:05","H","rush",34,25,1,10,"Landry for 9."],
-    [3,"11:20","H","rush",25,22,2,1,"Landry for 3. First down."],
-    [3,"10:35","H","td",22,0,1,10,"Boudreaux to Landry out of the backfield. Touchdown, Gators!","H",7],
-    [3,"10:30","H","kickoff",65,20,0,0,"Kickoff returned to the WOL 20."],
-    [3,"9:45","A","pass",20,70,1,10,"Hanson to Cole for 50! The Wolves are on the move!"],
-    [3,"8:55","A","rush",70,81,1,10,"Pike for 11. First down."],
-    [3,"8:00","A","td",81,100,1,10,"Hanson to Pike for 19 yards. Touchdown, Wolves!","A",7],
-    [3,"7:55","A","kickoff",35,75,0,0,"Kickoff returned to the GAT 25."],
-    [3,"7:10","H","rush",75,74,1,10,"Landry for 1."],
-    [3,"6:30","H","inc",74,74,2,9,"Incomplete."],
-    [3,"5:50","H","sack",74,81,3,9,"Sack! Boudreaux goes down for a loss of 7."],
-    [3,"5:05","H","punt",81,35,4,16,"Punt. Fair catch at the WOL 35."],
-    [3,"4:20","A","pass",35,47,1,10,"Hanson to Burke for 12."],
-    [3,"3:30","A","pass",47,65,1,10,"Hanson to Cole for 18. First down."],
-    [3,"0:00","A","qend",65,65,0,0,"End of the 3rd quarter."],
-    [4,"15:00","A","td",65,100,1,10,"Hanson goes long to Cole. 35 yards. Touchdown, Wolves!","A",7],
-    [4,"14:55","A","kickoff",35,75,0,0,"Kickoff returned to the GAT 25."],
-    [4,"14:10","H","rush",75,70,1,10,"Landry for 5."],
-    [4,"13:20","H","rush",70,64,2,5,"Landry for 6. First down. The clock keeps moving."],
-    [4,"12:30","H","rush",64,61,1,10,"Landry for 3."],
-    [4,"11:40","H","inc",61,61,2,7,"The pass falls incomplete."],
-    [4,"10:50","H","pass",61,53,3,7,"Boudreaux to Fontenot for 8. First down."],
-    [4,"0:00","H","final",50,50,0,0,"FINAL. Gators 21, Wolves 17."]
+    [1,"15:00","H","kickoff",65,25,0,0,"P.Arceneaux kicks 62 yards from GAT 35 to WOL 3. T.Webb returns the kickoff to WOL 25 for 22 yards (L.Hebert)."],
+    [1,"14:55","A","rush",25,29,1,10,"D.Pike up the middle to WOL 29 for 4 yards (M.Guidry)."],
+    [1,"14:20","A","inc",29,29,2,6,"(Shotgun) C.Hanson pass incomplete deep left to M.Cole."],
+    [1,"14:05","A","pass",29,40,3,6,"(Shotgun) C.Hanson pass short middle to R.Burke to WOL 40 for 11 yards (L.Broussard)."],
+    [1,"13:30","A","rush",40,43,1,10,"D.Pike left tackle to WOL 43 for 3 yards (M.Guidry)."],
+    [1,"12:50","A","sack",43,35,2,7,"(Shotgun) C.Hanson sacked at WOL 35 for -8 yards (L.Broussard)."],
+    [1,"12:10","A","pass",35,44,3,15,"(Shotgun) C.Hanson pass short right to M.Cole to WOL 44 for 9 yards (M.Guidry)."],
+    [1,"11:35","A","punt",44,92,4,6,"B.Okafor punts 48 yards to GAT 8, Center-J.Park, fair catch by K.Thibodeaux."],
+    [1,"11:20","H","rush",92,89,1,10,"J.Landry right end to GAT 11 for 3 yards (S.Tanner)."],
+    [1,"10:45","H","pass",89,67,2,7,"(Shotgun) T.Boudreaux pass short middle to A.Fontenot to GAT 33 for 22 yards (B.Ruiz)."],
+    [1,"10:05","H","pass",67,34,1,10,"T.Boudreaux pass deep left to K.Thibodeaux to WOL 34 for 33 yards (S.Tanner)."],
+    [1,"9:25","H","rush",34,28,1,10,"J.Landry right tackle to WOL 28 for 6 yards (B.Ruiz)."],
+    [1,"8:50","H","inc",28,28,2,4,"T.Boudreaux pass incomplete short right to A.Fontenot."],
+    [1,"8:15","H","pass",28,24,3,4,"(Shotgun) T.Boudreaux pass short left to A.Fontenot to WOL 24 for 4 yards (S.Tanner)."],
+    [1,"7:30","H","rush",24,12,1,10,"J.Landry left end to WOL 12 for 12 yards (B.Ruiz)."],
+    [1,"6:45","H","td",12,0,1,10,"T.Boudreaux pass short right to K.Thibodeaux for 12 yards, TOUCHDOWN.","H",7],
+    [1,"6:40","H","kickoff",65,22,0,0,"P.Arceneaux kicks 63 yards from GAT 35 to WOL 2. T.Webb returns the kickoff to WOL 22 for 20 yards (L.Hebert)."],
+    [1,"6:10","A","pass",22,29,1,10,"(Shotgun) C.Hanson pass short left to D.Pike to WOL 29 for 7 yards (M.Guidry)."],
+    [1,"5:30","A","rush",29,34,2,3,"D.Pike up the middle to WOL 34 for 5 yards (L.Broussard)."],
+    [1,"4:50","A","int",34,48,1,10,"C.Hanson pass deep middle intended for M.Cole is INTERCEPTED by M.Guidry at WOL 48. Return to WOL 48 for 0 yards (R.Burke)."],
+    [1,"4:20","H","rush",48,46,1,10,"J.Landry up the middle to WOL 46 for 2 yards (S.Tanner)."],
+    [1,"3:35","H","fumble",46,53,2,8,"T.Boudreaux sacked at GAT 47 for -7 yards (S.Tanner). FUMBLES, RECOVERED by WOL-B.Ruiz at GAT 47."],
+    [1,"3:00","A","pass",53,69,1,10,"(Shotgun) C.Hanson pass deep right to M.Cole to GAT 31 for 16 yards (L.Broussard)."],
+    [1,"2:20","A","rush",69,74,1,10,"D.Pike left guard to GAT 26 for 5 yards (M.Guidry)."],
+    [1,"1:35","A","pass",74,83,2,5,"(Shotgun) C.Hanson pass short left to R.Burke to GAT 17 for 9 yards (L.Broussard)."],
+    [1,"0:00","A","qend",83,83,0,0,"END QUARTER 1"],
+    [2,"15:00","A","rush",83,85,1,10,"D.Pike up the middle to GAT 15 for 2 yards (M.Guidry)."],
+    [2,"14:20","A","pen",85,75,2,8,"PENALTY on WOL-R.Burke, Offensive Holding, 10 yards, enforced at GAT 15 - No Play."],
+    [2,"13:40","A","pass",75,81,2,18,"(Shotgun) C.Hanson pass short left to M.Cole to GAT 19 for 6 yards (L.Broussard)."],
+    [2,"12:55","A","inc",81,81,3,12,"(Shotgun) C.Hanson pass incomplete deep right to R.Burke."],
+    [2,"12:10","A","fg",81,100,4,12,"T.Mercer 36 yard field goal is GOOD, Center-J.Park, Holder-B.Okafor.","A",3],
+    [2,"12:05","A","kickoff",35,75,0,0,"T.Mercer kicks 65 yards from WOL 35 to GAT 0. K.Thibodeaux returns the kickoff to GAT 25 for 25 yards (T.Webb)."],
+    [2,"11:30","H","rush",75,70,1,10,"J.Landry left tackle to GAT 30 for 5 yards (B.Ruiz)."],
+    [2,"10:50","H","pass",70,30,2,5,"(Shotgun) T.Boudreaux pass deep middle to K.Thibodeaux to WOL 30 for 40 yards (S.Tanner)."],
+    [2,"10:10","H","rush",30,22,1,10,"J.Landry right end to WOL 22 for 8 yards (B.Ruiz)."],
+    [2,"9:30","H","inc",22,22,2,2,"T.Boudreaux pass incomplete short left to A.Fontenot."],
+    [2,"8:55","H","rush",22,21,3,2,"J.Landry up the middle to WOL 21 for 1 yard (S.Tanner)."],
+    [2,"8:15","H","rush",21,19,4,1,"J.Landry up the middle to WOL 19 for 2 yards (B.Ruiz)."],
+    [2,"7:30","H","td",19,0,1,10,"T.Boudreaux pass short right to A.Fontenot for 19 yards, TOUCHDOWN.","H",7],
+    [2,"0:00","A","half",50,50,0,0,"END OF HALF"],
+    [3,"15:00","A","kickoff",35,70,0,0,"T.Mercer kicks 65 yards from WOL 35 to GAT 0. K.Thibodeaux returns the kickoff to GAT 30 for 30 yards (T.Webb)."],
+    [3,"14:25","H","pass",70,45,1,10,"(Shotgun) T.Boudreaux pass short right to A.Fontenot to WOL 45 for 25 yards (B.Ruiz)."],
+    [3,"13:40","H","sack",45,54,1,10,"(Shotgun) T.Boudreaux sacked at GAT 46 for -9 yards (S.Tanner)."],
+    [3,"12:55","H","pass",54,34,2,19,"(Shotgun) T.Boudreaux pass deep left to K.Thibodeaux to WOL 34 for 20 yards (B.Ruiz)."],
+    [3,"12:05","H","rush",34,25,1,10,"J.Landry right tackle to WOL 25 for 9 yards (S.Tanner)."],
+    [3,"11:20","H","rush",25,22,2,1,"J.Landry up the middle to WOL 22 for 3 yards (B.Ruiz)."],
+    [3,"10:35","H","td",22,0,1,10,"T.Boudreaux pass short middle to J.Landry for 22 yards, TOUCHDOWN.","H",7],
+    [3,"10:30","H","kickoff",65,20,0,0,"P.Arceneaux kicks 65 yards from GAT 35 to WOL 0. T.Webb returns the kickoff to WOL 20 for 20 yards (L.Hebert)."],
+    [3,"9:45","A","pass",20,70,1,10,"(Shotgun) C.Hanson pass deep middle to M.Cole to GAT 30 for 50 yards (L.Broussard)."],
+    [3,"8:55","A","rush",70,81,1,10,"D.Pike right end to GAT 19 for 11 yards (M.Guidry)."],
+    [3,"8:00","A","td",81,100,1,10,"(Shotgun) C.Hanson pass short right to D.Pike for 19 yards, TOUCHDOWN.","A",7],
+    [3,"7:55","A","kickoff",35,75,0,0,"T.Mercer kicks 65 yards from WOL 35 to GAT 0. K.Thibodeaux returns the kickoff to GAT 25 for 25 yards (T.Webb)."],
+    [3,"7:10","H","rush",75,74,1,10,"J.Landry up the middle to GAT 26 for 1 yard (S.Tanner)."],
+    [3,"6:30","H","inc",74,74,2,9,"T.Boudreaux pass incomplete short middle to A.Fontenot."],
+    [3,"5:50","H","sack",74,81,3,9,"(Shotgun) T.Boudreaux sacked at GAT 19 for -7 yards (S.Tanner)."],
+    [3,"5:05","H","punt",81,35,4,16,"L.Hebert punts 46 yards to WOL 35, Center-N.Dupre, fair catch by T.Webb."],
+    [3,"4:20","A","pass",35,47,1,10,"(Shotgun) C.Hanson pass short middle to R.Burke to WOL 47 for 12 yards (M.Guidry)."],
+    [3,"3:30","A","pass",47,65,1,10,"(Shotgun) C.Hanson pass short right to M.Cole to GAT 35 for 18 yards (L.Broussard)."],
+    [3,"0:00","A","qend",65,65,0,0,"END QUARTER 3"],
+    [4,"15:00","A","td",65,100,1,10,"(Shotgun) C.Hanson pass deep left to M.Cole for 35 yards, TOUCHDOWN.","A",7],
+    [4,"14:55","A","kickoff",35,75,0,0,"T.Mercer kicks 65 yards from WOL 35 to GAT 0. K.Thibodeaux returns the kickoff to GAT 25 for 25 yards (T.Webb)."],
+    [4,"14:10","H","rush",75,70,1,10,"J.Landry left end to GAT 30 for 5 yards (S.Tanner)."],
+    [4,"13:20","H","rush",70,64,2,5,"J.Landry up the middle to GAT 36 for 6 yards (B.Ruiz)."],
+    [4,"12:30","H","rush",64,61,1,10,"J.Landry right guard to GAT 39 for 3 yards (S.Tanner)."],
+    [4,"11:40","H","inc",61,61,2,7,"T.Boudreaux pass incomplete short right to A.Fontenot."],
+    [4,"10:50","H","pass",61,53,3,7,"(Shotgun) T.Boudreaux pass short middle to A.Fontenot to GAT 47 for 8 yards (B.Ruiz)."],
+    [4,"0:00","H","final",50,50,0,0,"END OF GAME. Gators 21, Wolves 17."]
   ];
-  const toObj = r => ({ q: r[0], c: r[1], o: r[2], k: r[3], a: r[4], b: r[5], dn: r[6], ytg: r[7], t: r[8], s: r[9], p: r[10] });
+  const toObj = r => ({ q: r[0], c: r[1], o: r[2], k: r[3], a: r[4], b: r[5], dn: r[6], ytg: r[7], t: r[8], s: r[9], p: r[10] || 0 });
 
-  /* ---------- Announcer lines ---------- */
+  /* ---------- Announcer lines ----------
+     Tokens: {pl} main player, {rc} receiver, {tk} tackler, {yds} yards, {off}/{def} team names, {n} sack count.
+     A line is skipped when a token it needs is missing for that play. */
   const LINES = {
     coachO: {
-      td: ["Touchdown, boi! Dat's what I'm talkin' 'bout, tell ya whut!", "Put it in da house, babe! Somebody call da bayou, we gone party!"],
-      sack: ["He folded like a lawn chair on dat tackle, boi! Tell ya whut!", "Dat quarterback got hugged by a freight train, babe!"],
-      turnover: ["Gave da ball away like Christmas, boi! Ain't no gumbo for dat!", "Dat ball was loose like a goose, babe! Lawd have mercy!"],
-      fg: ["Three points, boi. Take 'em and say thank ya!", "Dat kicker got ice in his veins and hot sauce in his shoes, babe!"],
-      big: ["Dat boy ran like a wild alligator down in da bayou!", "Big play, boi! Somebody was asleep on dat one, tell ya whut!"],
-      first: ["Move da chains, babe! Dat's a fresh set o' downs!", "Dat's how ya keep da gumbo cookin', boi!"],
-      stuffed: ["Right up da middle and bam! Hit 'em in da mouth, babe!", "Dat hole closed faster than a crawfish boil, boi!"],
-      inc: ["Dat ball landed in Mississippi, boi! Wasn't nowhere near nobody!", "Incomplete, babe. Dat's why we practice, tell ya whut!"],
-      normal: ["Gotta run da ball right up da middle, boi!", "Dat defense lookin' fast like a wild alligator, babe! Next man up!"],
-      punt: ["Boot it, boi! Flip da field like a pancake, babe!", "Dat punter got a leg like a cypress tree, tell ya whut!"],
+      td: ["Touchdown, boi! Dat's what I'm talkin' 'bout, tell ya whut!", "Put it in da house, babe! Somebody call da bayou, we gone party!", "{pl} done put six on da board, boi! Somebody tell his mama!", "{rc} caught dat like it was a hot biscuit, babe! Touchdown!"],
+      sack: ["He folded like a lawn chair on dat tackle, boi! Tell ya whut!", "Dat quarterback got hugged by a freight train, babe!", "{tk} folded {pl} like a lawn chair, boi! Tell ya whut!", "Dat's da {n} sack tonight, boi! Somebody get dat quarterback a pillow!"],
+      turnover: ["Gave da ball away like Christmas, boi! Ain't no gumbo for dat!", "Dat ball was loose like a goose, babe! Lawd have mercy!", "{pl} just handed over da keys, boi! Dat's a crime in Louisiana!"],
+      fg: ["Three points, boi. Take 'em and say thank ya!", "{pl} got ice in his veins and hot sauce in his shoes, babe!"],
+      big: ["Dat boy ran like a wild alligator down in da bayou!", "Big play, boi! Somebody was asleep on dat one, tell ya whut!", "{yds} yards, boi! {tk} was lookin' at da scenery!", "{rc} left {tk} chasin' his own shadow, babe!"],
+      first: ["Move da chains, babe! Dat's a fresh set o' downs!", "Dat's how ya keep da gumbo cookin', boi!", "{pl} got da first down, babe! Dat's honest work!"],
+      stuffed: ["Right up da middle and bam! Hit 'em in da mouth, babe!", "Dat hole closed faster than a crawfish boil, boi!", "{tk} met {pl} at da door and said not today, babe!"],
+      inc: ["Dat ball landed in Mississippi, boi! Wasn't nowhere near nobody!", "Incomplete, babe. Dat's why we practice, tell ya whut!", "{pl} threw dat one to da moon, boi!"],
+      normal: ["Gotta run da ball right up da middle, boi!", "Dat defense lookin' fast like a wild alligator, babe! Next man up!", "{pl} for {yds}, boi. Dat's a good ol' fashioned gain!", "{tk} made da tackle, babe. Somebody buy dat man a plate!"],
+      punt: ["Boot it, boi! Flip da field like a pancake, babe!", "{pl} boots it, boi! Dat's a leg like a cypress tree!"],
       kickoff: ["Here we go, boi! Kick it to da moon, babe!", "Kickoff! Everybody grab a plate o' jambalaya!"],
       pen: ["Flag on da play, babe! Dem refs been eatin' too much boudin!", "Ay, dat's a flag, boi! Ref got eagle eyes tonight!"],
       half: ["Halftime, boi! Go get ya some cracklins and a cold drink!", "Fifteen minutes, babe! Somebody check on da band, tell ya whut!"],
       final: ["Dat's da ball game, boi! Everybody come to da house for gumbo!", "Final whistle, babe! Respectful handshake, den we eat!"],
-      quarter: ["End o' da quarter, boi! Switch sides, babe!"]
+      quarter: ["End o' da quarter, boi! Switch sides, babe!"],
+      sit: {
+        fourth: ["Fourth down, boi! Coach got alligator blood, he goin' for it!", "Ain't nobody punt in dis house, babe! Go get it!"],
+        redzone: ["We in da red zone, boi! I can smell da gumbo from here!", "Inside da twenty, babe! Somebody grab da seasoning!"],
+        close: ["Dis game tighter dan a crawfish tail, boi! My heart can't take it!", "One score, babe! Somebody hold my sweet tea!"],
+        blowout: ["Dis game got more holes dan a fishin' net, babe!", "Somebody check on da losin' side, boi. Dey need a hug and some boudin."]
+      }
     },
     rivals: {
-      td: ["{off} FAN: THIS IS A MASTERCLASS! I'm crying! / {def} FAN: Are we watching the same game? The refs are blind!", "{off} FAN: HALL OF FAME! Build him a statue! / {def} FAN: Check his Venmo history! That's a payoff!"],
-      sack: ["{def} FAN: SACK! Best defense in history! / {off} FAN: That was holding! Open your eyes, ref!", "{def} FAN: He got folded like a pizza box! / {off} FAN: Our quarterback was breathed on! Throw a flag!"],
-      turnover: ["{def} FAN: TAKEAWAY! We are unbeatable! / {off} FAN: He was clearly down! Look at the replay in your mind!", "{def} FAN: Thank you for the gift! / {off} FAN: The ball was slippery! This is rigged!"],
-      fg: ["{off} FAN: Clutch kicker! Sign him for life! / {def} FAN: Three points. Cute.", "{off} FAN: Money! / {def} FAN: Overrated. Our defense let him do it on purpose."],
-      big: ["{off} FAN: That's a huge play! Told you! / {def} FAN: Overrated. Our guys gave that away on purpose.", "{off} FAN: UNSTOPPABLE! / {def} FAN: Our cornerback was tying his shoe. That doesn't count!"],
+      td: ["{off} FAN: THIS IS A MASTERCLASS! I'm crying! / {def} FAN: Are we watching the same game? The refs are blind!", "{off} FAN: HALL OF FAME! Build him a statue! / {def} FAN: Check his Venmo history! That's a payoff!", "{off} FAN: {pl} IS A GOD! / {def} FAN: {pl} is a bum with a good agent!"],
+      sack: ["{def} FAN: SACK! Best defense in history! / {off} FAN: That was holding! Open your eyes, ref!", "{def} FAN: He got folded like a pizza box! / {off} FAN: Our quarterback was breathed on! Throw a flag!", "{def} FAN: {tk} IS A MONSTER! / {off} FAN: {tk} is a criminal! Arrest him!"],
+      turnover: ["{def} FAN: TAKEAWAY! We are unbeatable! / {off} FAN: He was clearly down! Look at the replay in your mind!", "{def} FAN: Thank you for the gift! / {off} FAN: The ball was slippery! This is rigged!", "{off} FAN: {pl} would never do that! / {def} FAN: {pl} just did that!"],
+      fg: ["{off} FAN: Clutch kicker! Sign him for life! / {def} FAN: Three points. Cute.", "{off} FAN: {pl}, money! / {def} FAN: Overrated. Our defense let him do it on purpose."],
+      big: ["{off} FAN: That's a huge play! Told you! / {def} FAN: Overrated. Our guys gave that away on purpose.", "{off} FAN: UNSTOPPABLE! / {def} FAN: Our cornerback was tying his shoe. That doesn't count!", "{off} FAN: {yds} yards! Poetry! / {def} FAN: {tk} was robbed by the refs and by gravity!"],
       first: ["{off} FAN: Moving the chains like pros! / {def} FAN: Spotted a yard short. Everybody saw it.", "{off} FAN: Keep it rolling! / {def} FAN: That ref has a gambling problem."],
-      stuffed: ["{def} FAN: STUFFED! Brick wall! / {off} FAN: The refs let them cheat!", "{def} FAN: Not in our house! / {off} FAN: Who put all those guys in the way?"],
-      inc: ["{off} FAN: Pass interference! Obviously! / {def} FAN: Incomplete! Learn the rules!", "{def} FAN: Dropped it! Hands of stone! / {off} FAN: The ball was thrown by a ghost!"],
-      normal: ["{off} FAN: That's a gain! Respect it! / {def} FAN: Two yards? We let him have it.", "{def} FAN: We have this under control. / {off} FAN: Are we watching the same game?"],
+      stuffed: ["{def} FAN: STUFFED! Brick wall! / {off} FAN: The refs let them cheat!", "{def} FAN: Not in our house! / {off} FAN: Who put all those guys in the way?", "{def} FAN: {tk} owns {pl}! / {off} FAN: {pl} tripped on a conspiracy!"],
+      inc: ["{off} FAN: Pass interference! Obviously! / {def} FAN: Incomplete! Learn the rules!", "{def} FAN: Dropped it! Hands of stone! / {off} FAN: The ball was thrown by a ghost!", "{def} FAN: {pl} throws like my grandma! / {off} FAN: Your grandma has a great arm!"],
+      normal: ["{off} FAN: That's a gain! Respect it! / {def} FAN: Two yards? We let him have it.", "{def} FAN: We have this under control. / {off} FAN: Are we watching the same game?", "{off} FAN: {pl} for {yds}! Genius! / {def} FAN: {tk} was getting a snack."],
       punt: ["{off} FAN: Strategic punt! Genius! / {def} FAN: They surrendered!", "{def} FAN: Bye bye! / {off} FAN: That was the plan the whole time."],
       kickoff: ["{off} FAN: Here we go! Good vibes only! / {def} FAN: The kicker's cousin works for the league.", "{off} FAN: Boom! To the moon! / {def} FAN: Illegal! Probably!"],
       pen: ["{def} FAN: FLAG! Finally somebody sees it! / {off} FAN: That's a conspiracy! Fire the refs!", "{off} FAN: What was THAT? / {def} FAN: Hold it, hold it, it was holding."],
       half: ["{off} FAN: We're winning in my heart! / {def} FAN: Wake up, sheeple!", "{def} FAN: Halftime snacks are better on our side! / {off} FAN: Our hot dogs are legally superior!"],
       final: ["{off} FAN: Best game ever! / {def} FAN: The refs stole it. I'm writing a letter.", "{def} FAN: We wuz robbed! / {off} FAN: Scoreboard doesn't lie!"],
-      quarter: ["{off} FAN: Time flies when we're winning! / {def} FAN: Time flies when we're robbed!"]
+      quarter: ["{off} FAN: Time flies when we're winning! / {def} FAN: Time flies when we're robbed!"],
+      sit: {
+        fourth: ["{off} FAN: Go for it! Be bold! / {def} FAN: Please punt. Please.", "{def} FAN: They'll never get it! / {off} FAN: Fourth down is just third down with confidence!"],
+        redzone: ["{off} FAN: Red zone, baby! / {def} FAN: Red zone? More like our zone!", "{def} FAN: Hold the line! / {off} FAN: Score already, you cowards!"],
+        close: ["{off} FAN: I can't watch! / {def} FAN: I can't breathe!", "{def} FAN: This is the best game of my life! / {off} FAN: I've aged ten years!"],
+        blowout: ["{off} FAN: Turn the TV off. / {def} FAN: Don't turn it off! Think of the hot dogs!", "{def} FAN: It's fine. We're building character. / {off} FAN: Please stop talking."]
+      }
     },
     guru: {
-      td: ["Beautiful mechanics. That is what proper hydration looks like.", "Touchdown. Notice the pliability in that hip rotation."],
-      sack: ["Zero pliability in that offensive line. Disastrous standard of football.", "If he'd done his plie squats, he would have bent instead of broken."],
-      turnover: ["The mechanics on that throw were completely unacceptable.", "Dry hands. Hydrate. Use electrolytes. Give the ball back."],
-      fg: ["Three points. Clean mechanics, clean smoothie.", "The kicker's pliability is elite. Not a mineral deficiency in sight."],
-      big: ["That stride length is a gift. Imagine if he'd had his electrolytes.", "Forty yards on a diet of avocado and discipline. Incredible."],
-      first: ["Chains move. Efficient. Like a well-stretched hamstring.", "First down. Hydration wins games."],
-      stuffed: ["A 1-yard run? If they were drinking their electrolyte minerals, that's an easy 12 yards.", "No pliability, no yards. Simple science."],
-      inc: ["Unacceptable footwork. Did he even do his morning ice bath?", "Incomplete. Dry mouth. Dry hands. Dry offense."],
-      normal: ["Three yards. Acceptable. Not exceptional.", "Look at the pliability of that defensive line."],
-      punt: ["A punt is just a long exhale. Breathe through it.", "That leg swing needs a good foam roll."],
+      td: ["Beautiful mechanics. That is what proper hydration looks like.", "Touchdown. Notice the pliability in that hip rotation.", "{pl} understands his body. Touchdown."],
+      sack: ["Zero pliability in that offensive line. Disastrous standard of football.", "If he'd done his plie squats, he would have bent instead of broken.", "{tk} is hydrated and it shows. {pl} is not."],
+      turnover: ["The mechanics on that throw were completely unacceptable.", "Dry hands. Hydrate. Use electrolytes. Give the ball back.", "{pl}, that is a grip problem. A grip problem is a hydration problem."],
+      fg: ["Three points. Clean mechanics, clean smoothie.", "{pl}'s pliability is elite. Not a mineral deficiency in sight."],
+      big: ["That stride length is a gift. Imagine if he'd had his electrolytes.", "{yds} yards on a diet of avocado and discipline. Incredible.", "{tk} could not keep up. Probably a magnesium issue."],
+      first: ["Chains move. Efficient. Like a well-stretched hamstring.", "First down. Hydration wins games.", "{pl} converts. Notice the posture."],
+      stuffed: ["A 1-yard run? If they were drinking their electrolyte minerals, that's an easy 12 yards.", "No pliability, no yards. Simple science.", "{tk} wins that rep. {pl} needs a foam roller."],
+      inc: ["Unacceptable footwork. Did he even do his morning ice bath?", "Incomplete. Dry mouth. Dry hands. Dry offense.", "{pl} has a dehydrated release. You can see it."],
+      normal: ["Three yards. Acceptable. Not exceptional.", "Look at the pliability of that defensive line.", "{pl} for {yds}. Good. Now drink some water."],
+      punt: ["A punt is just a long exhale. Breathe through it.", "{pl}'s leg swing needs a good foam roll."],
       kickoff: ["Here we go. Everybody stretch your hips.", "Kickoff. Take a deep breath and hydrate."],
       pen: ["A flag. Lack of discipline. Like skipping leg day.", "Penalty. Tension in the shoulders caused that."],
       half: ["Halftime. Perfect time for a green juice.", "Fifteen minutes. Foam roll, hydrate, repeat."],
       final: ["Final score. Hydration wins again.", "Good game. Now go stretch, everybody."],
-      quarter: ["End of the quarter. Roll out your calves."]
+      quarter: ["End of the quarter. Roll out your calves."],
+      sit: {
+        fourth: ["Fourth down. Breathe. Trust your training.", "Going for it on fourth. That takes pliability of the mind."],
+        redzone: ["Red zone. Stay loose. Tense muscles drop footballs.", "Inside the twenty. Hydration matters most right now."],
+        close: ["One score game. This is where electrolytes decide everything.", "Close game. Slow your breathing. Slow it down."],
+        blowout: ["This is a blowout. Somebody did not drink enough water this week.", "Lopsided. The losing side clearly ignored mobility work."]
+      }
     }
   };
-  const SIDELINE = [
+  const JIMMY = [
     { box: "🚨 SIDELINE: \"Let's go down to Jimmy the Hot Dog Guy... Jimmy, thoughts?\" \"Well guys, the mustard-to-bun ratio here is—\" \"Thanks Jimmy, back to the action!\"", say: "Let's go down to Jimmy the Hot Dog Guy. Jimmy, thoughts? Well guys, the mustard to bun ratio here is... Thanks Jimmy, back to the action!" },
-    { box: "📣 UNHINGED FAN: \"THEY GOTTA GET THEIR HANDS UP, MAN! LARRY IS RUNNING FOR HIS LIFE OUT THERE!\"", say: "THEY GOTTA GET THEIR HANDS UP, MAN! LARRY IS RUNNING FOR HIS LIFE OUT THERE!" }
+    { box: "🚨 SIDELINE: \"Jimmy's back, folks. Jimmy, you've been out there since the second quarter. Are you okay?\" \"I have eleven hot dogs left and a dream.\" \"Thanks Jimmy.\"", say: "Jimmy's back, folks. Jimmy, you've been out there since the second quarter. Are you okay? I have eleven hot dogs left and a dream. Thanks Jimmy." }
+  ];
+  const LARRY = [
+    { box: "📣 UNHINGED FAN: \"THEY GOTTA GET THEIR HANDS UP, MAN! LARRY IS RUNNING FOR HIS LIFE OUT THERE!\"", say: "THEY GOTTA GET THEIR HANDS UP, MAN! LARRY IS RUNNING FOR HIS LIFE OUT THERE!" },
+    { box: "📣 UNHINGED FAN: \"LARRY IS STILL RUNNING! SOMEBODY CATCH LARRY! HE'S BEEN RUNNING SINCE THE FIRST QUARTER!\"", say: "LARRY IS STILL RUNNING! SOMEBODY CATCH LARRY! HE'S BEEN RUNNING SINCE THE FIRST QUARTER!" }
   ];
   const HALF_SHOWS = [
     "THE MARCHING BAND OF 14 DOTS PERFORMS \"ODE TO A HOT DOG\"",
@@ -313,10 +537,12 @@
   let PLAYS = [], SCORES = [];
   let idx = -1, playing = false, speed = 1, timer = null, waited = 0, popT = null;
   let announcerOn = true, voiceOn = true, voiceUnlocked = false;
+  let currentEvent = null, eventState = 'post', followLive = false, liveTimer = null, waitingForLive = false;
+  const lastLine = {}, sidelineSeen = [0, 0];
 
   const field = $('field'), dotsEl = $('dots'), ball = $('ball'), ballSpan = ball.querySelector('span');
   const overlay = $('overlay'), box = $('box'), feed = $('feed'), sit = $('sit');
-  const slider = $('slider'), msg = $('msg');
+  const slider = $('slider'), msg = $('msg'), statusEl = $('status');
   const offDots = [], defDots = [];
   const OFFDX = [-2.5, -0.4, -0.8, -0.8, -0.4], OFFY = [50, 24, 38, 62, 76];
   const DEFDX = [3, 1, 1.6, 1.6, 1],            DEFY = [50, 30, 42, 58, 70];
@@ -338,13 +564,11 @@
   for (let i = 0; i < 14; i++) { const b = document.createElement('i'); b.style.animationDelay = (i * 0.07) + 's'; band.appendChild(b); }
 
   /* ---------- Helpers ---------- */
+  function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || ''; }
   function spot(x) {
     x = Math.round(x);
     if (x === 50) return '50';
     return x < 50 ? TEAMS.A.short + ' ' + x : TEAMS.H.short + ' ' + (100 - x);
-  }
-  function fill(s, p) {
-    return s.replace(/\{off\}/g, TEAMS[p.o].name).replace(/\{def\}/g, TEAMS[p.o === 'A' ? 'H' : 'A'].name);
   }
   function buildScores() {
     let A = 0, H = 0;
@@ -354,6 +578,7 @@
     $('nA').textContent = TEAMS.A.short; $('nH').textContent = TEAMS.H.short;
     $('ezLn').textContent = TEAMS.A.name.toUpperCase(); $('ezRn').textContent = TEAMS.H.name.toUpperCase();
   }
+  function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
   function normalize(raw) {
     const teams = JSON.parse(JSON.stringify(TEAMS0));
@@ -465,12 +690,51 @@
     try {
       window.speechSynthesis.cancel();
       text.split(' / ').forEach((part, k) => {
-        const u = new SpeechSynthesisUtterance(part.replace(/^[A-Za-z ]+ FAN:\s*/, ''));
+        const u = new SpeechSynthesisUtterance(part.replace(/^[A-Za-z .'-]+ FAN:\s*/, ''));
         u.rate = Math.min(1.3, 0.95 + (speed - 1) * 0.1);
         u.pitch = mode === 'rivals' ? (k === 0 ? 1.35 : 0.75) : (mode === 'guru' ? 0.9 : 1.0);
         window.speechSynthesis.speak(u);
       });
     } catch (e) {}
+  }
+  function lastName(n) { return n ? n.split('.').slice(1).join('.') : ''; }
+  function namesIn(text) {
+    const NM = /[A-Z]\.[A-Z][A-Za-z'’\-]+/;
+    const t = String(text || '').replace(/^\s*(\([^)]*\)\s*)+/, '');
+    const first = t.match(NM);
+    const toM = t.match(/\bto ([A-Z]\.[A-Z][A-Za-z'’\-]+)/);
+    const par = t.match(/\(([^)]*)\)\.?\s*$/);
+    const tk = par ? par[1].match(NM) : null;
+    return { pl: lastName(first && first[0]), rc: lastName(toM && toM[1]), tk: lastName(tk && tk[0]) };
+  }
+  function contextFor(p, i, gain) {
+    const nm = namesIn(p.t);
+    let sacks = 0;
+    for (let j = 0; j <= i; j++) if (PLAYS[j].k === 'sack') sacks++;
+    return {
+      pl: nm.pl, rc: p.k === 'pass' || p.k === 'td' ? nm.rc : '', tk: nm.tk,
+      yds: String(Math.abs(Math.round(gain))),
+      off: TEAMS[p.o].name, def: TEAMS[p.o === 'A' ? 'H' : 'A'].name,
+      n: (p.k === 'sack' && sacks >= 3) ? ordinal(sacks) : ''
+    };
+  }
+  function fillLine(s, ctx) {
+    let ok = true;
+    const out = s.replace(/\{(\w+)\}/g, (_, k) => {
+      const v = ctx[k];
+      if (v === undefined || v === null || v === '') { ok = false; return ''; }
+      return v;
+    });
+    return ok ? out : null;
+  }
+  function pickLine(pool, ctx, key) {
+    const cands = [];
+    pool.forEach(s => { const f = fillLine(s, ctx); if (f) cands.push(f); });
+    if (!cands.length) return null;
+    const opts = cands.length > 1 ? cands.filter(c => c !== lastLine[key]) : cands;
+    const r = opts[Math.floor(Math.random() * opts.length)];
+    lastLine[key] = r;
+    return r;
   }
   function category(p, gain, isFirst) {
     switch (p.k) {
@@ -491,6 +755,18 @@
     if (isFirst) return 'first';
     if (p.k === 'rush' && gain <= 1) return 'stuffed';
     return 'normal';
+  }
+  function situationFor(p, i, cat) {
+    if (['normal', 'first', 'big', 'stuffed', 'inc', 'sack'].indexOf(cat) < 0) return null;
+    const sc = SCORES[i] || { A: 0, H: 0 };
+    const diff = Math.abs(sc.A - sc.H);
+    if (p.dn === 4 && SCRIMMAGE.indexOf(p.k) >= 0) return 'fourth';
+    const dir = p.o === 'A' ? 1 : -1;
+    const yte = dir > 0 ? 100 - p.b : p.b;
+    if (SCRIMMAGE.indexOf(p.k) >= 0 && yte <= 20) return 'redzone';
+    if (p.q >= 4 && diff <= 3) return 'close';
+    if (p.q >= 3 && diff >= 17) return 'blowout';
+    return null;
   }
   function popFor(p, cat) {
     switch (p.k) {
@@ -529,7 +805,7 @@
     }
     $('tA').classList.toggle('has', poss === 'A');
     $('tH').classList.toggle('has', poss === 'H');
-    if (i < 0) { sit.textContent = 'SAMPLE GAME · TAP PLAY'; return; }
+    if (i < 0) { sit.textContent = currentEvent ? 'TAP PLAY' : 'SAMPLE GAME · TAP PLAY'; return; }
     const labels = { kickoff: 'KICKOFF', punt: 'PUNT', fg: 'FIELD GOAL TRY', fgmiss: 'FIELD GOAL TRY', half: 'HALFTIME', final: 'FINAL', qend: 'END OF QUARTER', to: 'TIMEOUT' };
     sit.textContent = p.dn > 0 ? ORD[p.dn] + ' & ' + p.ytg + ' · BALL ON ' + spot(p.a) : (labels[p.k] || '');
   }
@@ -563,21 +839,31 @@
 
     if (!announcerOn) { box.textContent = p.t; return; }
 
-    let boxText, voiceText;
+    const ctx = contextFor(p, i, gain);
+    const L = LINES[mode];
+    let boxText = null, voiceText = null;
+
     const quiet = ['normal', 'inc', 'stuffed', 'first', 'punt', 'kickoff'].indexOf(cat) >= 0;
     const r = Math.random();
-    if (quiet && r < 0.18) {
-      const s = SIDELINE[r < 0.1 ? 0 : 1];
+    if (quiet && r < 0.16) {
+      const which = r < 0.09 ? 0 : 1;
+      const src = which === 0 ? JIMMY : LARRY;
+      const s = src[Math.min(sidelineSeen[which], 1)];
+      sidelineSeen[which]++;
       boxText = s.box; voiceText = s.say;
     } else {
-      const arr = (LINES[mode][cat] || LINES[mode].normal);
-      voiceText = fill(arr[Math.floor(Math.random() * arr.length)], p);
+      const sitKey = situationFor(p, i, cat);
+      let line = null;
+      if (sitKey && Math.random() < 0.35) line = pickLine(L.sit[sitKey], ctx, mode + ':sit:' + sitKey);
+      if (!line) line = pickLine(L[cat] || L.normal, ctx, mode + ':' + cat);
+      if (!line) line = pickLine(L.normal, ctx, mode + ':normal');
+      voiceText = line || p.t;
       boxText = voiceText.replace(/ \/ /g, '\n');
     }
     if (p.k === 'half') {
-      const show = HALF_SHOWS[Math.floor(Math.random() * HALF_SHOWS.length)];
+      const hs = HALF_SHOWS[Math.floor(Math.random() * HALF_SHOWS.length)];
       band.classList.add('show');
-      boxText = '🎺 HALFTIME SHOW: ' + show + '\n\n' + boxText;
+      boxText = '🎺 HALFTIME SHOW: ' + hs + '\n\n' + boxText;
     }
     box.textContent = boxText;
     say(voiceText, mode);
@@ -601,35 +887,121 @@
     }
     step();
   }
+  function liveActive() { return followLive && eventState === 'in'; }
   function step() {
-    if (idx + 1 >= PLAYS.length) { setPlaying(false); return; }
+    if (idx + 1 >= PLAYS.length) {
+      if (liveActive()) { waitingForLive = true; setStatus('Caught up with the game. Waiting for the next play…'); return; }
+      setPlaying(false); return;
+    }
     show(idx + 1, false);
-    if (idx + 1 >= PLAYS.length) { setPlaying(false); return; }
+    if (idx + 1 >= PLAYS.length && !liveActive()) { setPlaying(false); return; }
     schedule();
   }
   function setPlaying(on) {
     playing = on;
-    $('playBtn').textContent = on ? '⏸ PAUSE' : (idx + 1 >= PLAYS.length ? '⟲ REPLAY' : '▶ PLAY');
-    if (!on) clearTimeout(timer);
+    $('playBtn').textContent = on ? '⏸ PAUSE' : (idx + 1 >= PLAYS.length && PLAYS.length ? '⟲ REPLAY' : '▶ PLAY');
+    if (!on) { clearTimeout(timer); waitingForLive = false; }
   }
   function restart() {
     setPlaying(false);
     try { window.speechSynthesis.cancel(); } catch (e) {}
     clearTimeout(popT); overlay.classList.remove('show'); band.classList.remove('show');
     idx = -1; updateBoard(-1); updateSlider();
-    const start = { o: 'A', k: 'qend', a: 50, b: 50, dn: 0, ytg: 0 };
-    drawPlay(start, false);
+    drawPlay({ o: 'A', k: 'qend', a: 50, b: 50, dn: 0, ytg: 0 }, false);
     $('los').hidden = true; $('fdm').hidden = true;
-    box.textContent = 'Pick an announcer, tap PLAY, and let the madness start.';
+    box.textContent = 'Pick a game and an announcer, tap PLAY, and let the madness start.';
     feed.textContent = '';
+    sidelineSeen[0] = 0; sidelineSeen[1] = 0;
     $('playBtn').textContent = '▶ PLAY';
+  }
+
+  /* ---------- Live games from ESPN ---------- */
+  async function getJSON(url) {
+    let r;
+    try { r = await fetch(url, { cache: 'no-store' }); }
+    catch (e) { throw new Error('Could not reach ESPN (' + e.message + '). The browser may have blocked the request.'); }
+    if (!r.ok) throw new Error('ESPN answered with error ' + r.status + '.');
+    return r.json();
+  }
+  function stopLive() {
+    followLive = false; waitingForLive = false;
+    clearInterval(liveTimer); liveTimer = null;
+    $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBtn').textContent = 'FOLLOW LIVE';
+  }
+  function useSample() {
+    stopLive(); currentEvent = null; eventState = 'post'; $('liveBtn').hidden = true;
+    loadGame({ teams: JSON.parse(JSON.stringify(TEAMS0)), plays: SAMPLE_ROWS.map(toObj) });
+    sit.textContent = 'SAMPLE GAME · TAP PLAY';
+    $('diag').value = 'Sample game loaded. No ESPN data in use.';
+  }
+  function eventLabel(ev) {
+    try {
+      const c = ev.competitions[0], comp = c.competitors;
+      const away = comp.find(x => x.homeAway === 'away'), home = comp.find(x => x.homeAway === 'home');
+      const st = ev.status && ev.status.type;
+      const sc = (st && st.state !== 'pre') ? ' ' + (away.score || 0) + '-' + (home.score || 0) : '';
+      return away.team.abbreviation + ' @ ' + home.team.abbreviation + sc + ' · ' + (st ? st.shortDetail : '');
+    } catch (e) { return ev.shortName || ev.name || ev.id; }
+  }
+  async function fetchGames() {
+    const sel = $('gameSel'), wk = $('weekSel').value;
+    setStatus('Loading games…');
+    try {
+      const url = API + '/scoreboard' + (wk ? '?seasontype=2&week=' + wk : '');
+      const j = await getJSON(url);
+      const events = (j.events || []);
+      while (sel.options.length > 1) sel.remove(1);
+      events.forEach(ev => {
+        const o = document.createElement('option');
+        o.value = ev.id; o.textContent = eventLabel(ev);
+        o.dataset.state = (ev.status && ev.status.type && ev.status.type.state) || 'post';
+        sel.appendChild(o);
+      });
+      setStatus(events.length ? events.length + ' games found. Pick one.' : 'No games found for that week.', events.length ? 'ok' : '');
+    } catch (e) {
+      setStatus('Could not load the game list. ' + e.message + ' The sample game still works.', 'bad');
+      $('diag').value = 'Game list error: ' + e.message;
+    }
+  }
+  async function loadEvent(id, state) {
+    stopLive(); currentEvent = id; eventState = state;
+    if (state === 'pre') { setStatus('That game has not kicked off yet. Pick another.'); return; }
+    setStatus('Loading plays…');
+    try {
+      const j = await getJSON(API + '/summary?event=' + id);
+      const res = window.ESPN.adaptSummary(j);
+      $('diag').value = res.report;
+      if (!res.plays.length) throw new Error('No plays found in the data yet. See the data report below.');
+      loadGame(res);
+      $('liveBtn').hidden = state !== 'in';
+      sit.textContent = 'TAP PLAY';
+      setStatus('Loaded ' + res.plays.length + ' plays. Tap PLAY' + (state === 'in' ? ', or FOLLOW LIVE to jump to now.' : '.'), 'ok');
+    } catch (e) {
+      setStatus('Could not load that game. ' + e.message, 'bad');
+      if (!$('diag').value) $('diag').value = 'Load error: ' + e.message;
+      $('diagBox').open = true;
+    }
+  }
+  async function pollLive() {
+    if (!liveActive() || !currentEvent) return;
+    try {
+      const j = await getJSON(API + '/summary?event=' + currentEvent);
+      const res = window.ESPN.adaptSummary(j);
+      $('diag').value = res.report;
+      if (res.plays.length > PLAYS.length) {
+        PLAYS = res.plays; buildScores();
+        slider.max = String(Math.max(0, PLAYS.length - 1)); updateSlider();
+        setStatus('Live: ' + PLAYS.length + ' plays so far.', 'ok');
+        if (playing && waitingForLive) { waitingForLive = false; step(); }
+      }
+    } catch (e) { setStatus('Live update failed: ' + e.message, 'bad'); }
   }
 
   /* ---------- Controls ---------- */
   $('playBtn').addEventListener('click', () => {
     unlockVoice();
     if (playing) { setPlaying(false); return; }
-    if (idx + 1 >= PLAYS.length) restart();
+    if (idx + 1 >= PLAYS.length && !liveActive()) restart();
     setPlaying(true);
     step();
   });
@@ -644,6 +1016,18 @@
     if (playing) schedule();
   });
   $('restartBtn').addEventListener('click', restart);
+  $('liveBtn').addEventListener('click', () => {
+    unlockVoice();
+    if (followLive) { stopLive(); setPlaying(false); setStatus('Stopped following live.'); return; }
+    followLive = true;
+    $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBtn').textContent = 'LIVE: ON';
+    if (PLAYS.length) { show(PLAYS.length - 1, true); }
+    setPlaying(true);
+    waitingForLive = true;
+    setStatus('Following live. New plays will animate as they arrive.', 'ok');
+    clearInterval(liveTimer); liveTimer = setInterval(pollLive, 20000);
+    pollLive();
+  });
   $('annBtn').addEventListener('click', () => {
     announcerOn = !announcerOn;
     $('annBtn').setAttribute('aria-pressed', String(announcerOn));
@@ -663,10 +1047,17 @@
     show(parseInt(slider.value, 10), true);
     $('playBtn').textContent = idx + 1 >= PLAYS.length ? '⟲ REPLAY' : '▶ PLAY';
   });
+  $('gameSel').addEventListener('change', () => {
+    const o = $('gameSel').selectedOptions[0];
+    if (!o || o.value === 'sample') { useSample(); setStatus('Sample game loaded.'); return; }
+    loadEvent(o.value, o.dataset.state || 'post');
+  });
+  $('weekSel').addEventListener('change', () => { $('gameSel').value = 'sample'; useSample(); fetchGames(); });
   $('loadBtn').addEventListener('click', () => {
     msg.className = '';
     try {
       const data = normalize(JSON.parse($('json').value));
+      stopLive(); currentEvent = null; $('liveBtn').hidden = true;
       loadGame(data);
       msg.className = 'ok'; msg.textContent = 'Loaded ' + data.plays.length + ' plays. Tap PLAY.';
       sit.textContent = 'YOUR GAME · TAP PLAY';
@@ -674,13 +1065,17 @@
       msg.className = 'bad'; msg.textContent = 'Could not load: ' + e.message;
     }
   });
-  $('sampleBtn').addEventListener('click', () => {
-    loadGame({ teams: JSON.parse(JSON.stringify(TEAMS0)), plays: SAMPLE_ROWS.map(toObj) });
-    msg.className = 'ok'; msg.textContent = 'Sample game loaded.';
-  });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && playing) setPlaying(false); });
+  $('sampleBtn').addEventListener('click', () => { $('gameSel').value = 'sample'; useSample(); msg.className = 'ok'; msg.textContent = 'Sample game loaded.'; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && playing && !followLive) setPlaying(false); });
 
-  loadGame({ teams: JSON.parse(JSON.stringify(TEAMS0)), plays: SAMPLE_ROWS.map(toObj) });
+  /* ---------- Start ---------- */
+  (function buildWeeks() {
+    const w = $('weekSel');
+    const first = document.createElement('option'); first.value = ''; first.textContent = 'This week'; w.appendChild(first);
+    for (let n = 1; n <= 18; n++) { const o = document.createElement('option'); o.value = String(n); o.textContent = 'Week ' + n; w.appendChild(o); }
+  })();
+  useSample();
+  fetchGames();
 })();
 </script>
 
