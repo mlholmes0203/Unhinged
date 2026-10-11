@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<title>Unhinged Replay</title>
+<style>
+  /* Layout: scoreboard on top, a wide field with moving dots, arcade popups across it, announcer box and controls underneath. Single dark look, carried over from the first tracker. */
+  :root {
+    color-scheme: dark;
+    --bg: #111; --fg: #fff; --gold: #f2a900; --field: #2e7d32;
+    --wolf: #711c91; --gator: #ea00d9;
+    --panel: #222; --edge: #333; --control: #333; --control-edge: #555;
+    --readout: #00ff66; --dim: #a7adb4; --red: #ff6b6b; --green: #5dff9a;
+    --pixel: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+    --mono: ui-monospace, 'Courier New', monospace;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: var(--mono); text-align: center; margin: 0; padding: 10px 16px 24px; }
+  .wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  h1 { color: var(--gold); font-size: 20px; margin: 5px 0; }
+
+  #board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; background: var(--panel); border: 3px solid var(--edge); border-radius: 8px; padding: 10px; }
+  .team { display: flex; flex-direction: column; gap: 8px; align-items: center; border-bottom: 4px solid transparent; padding-bottom: 8px; min-width: 0; }
+  #tA { border-color: var(--wolf); }
+  #tH { border-color: var(--gator); }
+  .tn { font-family: var(--pixel); font-size: 11px; }
+  .ts { font-family: var(--pixel); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .team.has .tn::before { content: "🏈 "; }
+  .mid { display: flex; flex-direction: column; gap: 8px; font-family: var(--pixel); font-size: 10px; }
+  #clk { color: var(--gold); font-size: 13px; font-variant-numeric: tabular-nums; }
+  #sit { font-family: var(--pixel); font-size: 9px; color: var(--dim); line-height: 1.6; min-height: 1.6em; }
+
+  #field { background: var(--field); border: 4px solid var(--fg); height: 190px; width: 100%; position: relative; overflow: hidden; border-radius: 8px; box-sizing: border-box; --dur: .8s; }
+  .ez { position: absolute; top: 0; bottom: 0; width: 8%; display: flex; align-items: center; justify-content: center; }
+  .ez span { font-family: var(--pixel); font-size: 8px; color: rgba(255,255,255,.75); writing-mode: vertical-rl; letter-spacing: 1px; }
+  #ezL { left: 0; background: rgba(113,28,145,.75); border-right: 2px solid var(--fg); }
+  #ezR { right: 0; background: rgba(234,0,217,.55); border-left: 2px solid var(--fg); }
+  #ezL span { transform: rotate(180deg); }
+  #yard-lines { position: absolute; left: 8%; width: 84%; top: 0; bottom: 0; background-image: linear-gradient(90deg, transparent calc(100% - 2px), rgba(255,255,255,.3) 0); background-size: 10% 100%; }
+  #nums { position: absolute; left: 8%; width: 84%; bottom: 4px; height: 12px; }
+  #nums i { position: absolute; transform: translateX(-50%); font-style: normal; font-size: 10px; color: rgba(255,255,255,.55); }
+  .mark { position: absolute; top: 0; bottom: 0; width: 3px; transform: translateX(-50%); transition: left .4s; z-index: 1; }
+  #los { background: #4da3ff; }
+  #fdm { background: var(--gold); }
+  .dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); transition: left var(--dur) ease-in-out, top var(--dur) ease-in-out; z-index: 2; }
+  .dot.main { width: 16px; height: 16px; }
+  #dots[data-off="A"] .off, #dots[data-off="H"] .def { background: var(--wolf); box-shadow: 0 0 8px var(--wolf); }
+  #dots[data-off="H"] .off, #dots[data-off="A"] .def { background: var(--gator); box-shadow: 0 0 8px var(--gator); }
+  #ball { position: absolute; width: 14px; height: 9px; transform: translate(-50%, -50%); transition: left var(--dur) ease-in-out, top var(--dur) ease-in-out; z-index: 3; }
+  #ball span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #8b4513; border: 1px solid var(--fg); box-sizing: border-box; }
+  #ball span.arc { animation: arc var(--dur) ease-in-out; }
+  #field.snap .dot, #field.snap #ball, #field.snap .mark { transition: none !important; }
+  @keyframes arc { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-46px) scale(1.7); } 100% { transform: translateY(0) scale(1); } }
+
+  #band { position: absolute; left: 0; right: 0; top: 30%; display: none; justify-content: space-around; z-index: 4; padding: 0 8%; }
+  #band.show { display: flex; }
+  #band i { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); animation: bob .55s ease-in-out infinite alternate; }
+  #band i:nth-child(3n+1) { background: var(--wolf); }
+  #band i:nth-child(3n+2) { background: var(--gator); }
+  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(60px); } }
+
+  #overlay { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) scale(0); font-family: var(--pixel); font-size: clamp(14px, 5vw, 24px); line-height: 1.4; color: var(--gold); text-shadow: 3px 3px 0 #000; transition: transform .2s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,.72); padding: 12px 16px; border-radius: 5px; max-width: 88%; box-sizing: border-box; pointer-events: none; z-index: 6; }
+  #overlay.show { transform: translate(-50%, -50%) scale(1); }
+  #overlay[data-tone="red"] { color: var(--red); }
+  #overlay[data-tone="green"] { color: var(--green); }
+  #overlay[data-tone="white"] { color: var(--fg); }
+  #field.shake { animation: shake .4s; }
+  @keyframes shake { 0%, 100% { transform: translate(0,0); } 20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(4px, 2px); } }
+
+  .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+  button.ctl { font-family: var(--pixel); font-size: 10px; min-height: 44px; padding: 10px 14px; border-radius: 30px; border: 2px solid var(--control-edge); background: var(--control); color: var(--fg); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button.primary { background: var(--gold); color: #000; border-color: var(--gold); box-shadow: 0 4px 10px rgba(242,169,0,.4); }
+  button[aria-pressed="false"] { opacity: .55; }
+  button:disabled { opacity: .35; cursor: default; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+  select { background: var(--control); color: var(--fg); border: 1px solid var(--control-edge); padding: 8px; border-radius: 5px; font-size: 16px; min-height: 44px; }
+
+  #box { background: var(--panel); border: 3px solid var(--edge); border-radius: 8px; min-height: 80px; padding: 15px; box-sizing: border-box; font-size: 16px; line-height: 1.4; color: var(--readout); display: flex; align-items: center; justify-content: center; white-space: pre-line; overflow-wrap: anywhere; }
+  #feed { font-size: 12px; color: var(--dim); min-height: 2.8em; line-height: 1.4; }
+  #scrub { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--dim); }
+  input[type=range] { width: 100%; accent-color: var(--gold); margin: 0; min-height: 32px; }
+
+  details { background: var(--panel); border: 2px solid var(--edge); border-radius: 8px; padding: 10px; text-align: left; }
+  summary { cursor: pointer; font-size: 14px; }
+  .hint { font-size: 12px; color: var(--dim); line-height: 1.5; }
+  textarea { width: 100%; box-sizing: border-box; background: #181818; color: var(--fg); border: 1px solid var(--control-edge); border-radius: 6px; padding: 8px; font-family: var(--mono); font-size: 16px; margin-bottom: 8px; }
+  #msg { font-size: 13px; margin: 8px 0 0; min-height: 1.2em; }
+  #msg.bad { color: var(--red); }
+  #msg.ok { color: var(--green); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot, #ball, .mark, #overlay { transition: none; }
+    #ball span.arc, #field.shake, #band i { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <h1>🏈 UNHINGED REPLAY 🏈</h1>
+
+  <div id="board">
+    <div class="team" id="tA"><span class="tn" id="nA">WOL</span><span class="ts" id="sA">0</span></div>
+    <div class="mid"><span id="qtr">PRE</span><span id="clk">15:00</span></div>
+    <div class="team" id="tH"><span class="tn" id="nH">GAT</span><span class="ts" id="sH">0</span></div>
+  </div>
+  <div id="sit">SAMPLE GAME · TAP PLAY</div>
+
+  <div id="field">
+    <div class="ez" id="ezL"><span id="ezLn"></span></div>
+    <div class="ez" id="ezR"><span id="ezRn"></span></div>
+    <div id="yard-lines"></div>
+    <div id="nums"></div>
+    <div class="mark" id="los" hidden></div>
+    <div class="mark" id="fdm" hidden></div>
+    <div id="dots" data-off="A"></div>
+    <div id="ball"><span></span></div>
+    <div id="band"></div>
+    <div id="overlay" data-tone="gold">KICKOFF!</div>
+  </div>
+
+  <div class="row">
+    <button class="ctl primary" id="playBtn">▶ PLAY</button>
+    <button class="ctl" id="nextBtn">NEXT PLAY</button>
+    <button class="ctl" id="speedBtn">SPEED 1x</button>
+  </div>
+
+  <div class="row">
+    <select id="mode-select" aria-label="Announcer">
+      <option value="coachO">🎙️ Mode: Coach O</option>
+      <option value="rivals">🎙️ Mode: Biased Rivals</option>
+      <option value="guru">🎙️ Mode: Wellness Guru</option>
+    </select>
+    <button class="ctl" id="annBtn" aria-pressed="true">ANNOUNCER ON</button>
+    <button class="ctl" id="voiceBtn" aria-pressed="true">VOICE ON</button>
+  </div>
+
+  <div id="box" aria-live="polite">Pick an announcer, tap PLAY, and let the madness start.</div>
+  <div id="feed"></div>
+
+  <div id="scrub">
+    <label for="slider" id="sliderLabel">Play 0 of 0</label>
+    <input type="range" id="slider" min="0" max="0" value="0">
+    <div class="row"><button class="ctl" id="restartBtn">⟲ RESTART</button></div>
+  </div>
+
+  <details id="loader">
+    <summary>Load your own plays (JSON)</summary>
+    <p class="hint">Paste a list of plays, or an object with "teams" and "plays". Each play needs q (quarter), c (clock), o (A or H, the team with the ball), k (kind), a and b (yard line before and after, 0 to 100 from the left goal line) and t (text). A drives toward 100, H drives toward 0. Optional: dn, ytg, s (A or H) and p (points). Kinds: kickoff, rush, pass, inc, sack, int, fumble, punt, fg, fgmiss, td, pen, to, qend, half, final, safety.</p>
+    <label for="json" class="hint">Plays</label>
+    <textarea id="json" rows="6" spellcheck="false" placeholder='[{"q":1,"c":"15:00","o":"H","k":"kickoff","a":65,"b":25,"t":"Opening kickoff"}]'></textarea>
+    <div class="row">
+      <button class="ctl" id="loadBtn">LOAD</button>
+      <button class="ctl" id="sampleBtn">SAMPLE GAME</button>
+    </div>
+    <p id="msg" role="status"></p>
+  </details>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const FL = 8, FW = 84;                      // field starts 8% in and spans 84% of the width
+  const xp = x => FL + x * FW / 100;
+  const clampX = x => Math.max(-9, Math.min(109, x));
+  const KINDS = ['kickoff','rush','pass','inc','sack','int','fumble','punt','fg','fgmiss','td','pen','to','qend','half','final','safety'];
+  const TEAMS0 = { A: { name: 'Wolves', short: 'WOL' }, H: { name: 'Gators', short: 'GAT' } };
+  let TEAMS = JSON.parse(JSON.stringify(TEAMS0));
+
+  /* ---------- Sample game (made-up teams, not a real NFL game) ---------- */
+  // [quarter, clock, offense A/H, kind, from, to, down, yards to go, text, scoring team, points]
+  const SAMPLE_ROWS = [
+    [1,"15:00","H","kickoff",65,25,0,0,"Gators kick deep. The Wolves start at the WOL 25."],
+    [1,"14:55","A","rush",25,29,1,10,"Pike up the middle for 4."],
+    [1,"14:20","A","inc",29,29,2,6,"Hanson throws it over Cole's head. Incomplete."],
+    [1,"14:05","A","pass",29,40,3,6,"Hanson finds Burke for 11. First down."],
+    [1,"13:30","A","rush",40,43,1,10,"Pike picks up 3."],
+    [1,"12:50","A","sack",43,35,2,7,"The Gators bring the house. Hanson is sacked for a loss of 8."],
+    [1,"12:10","A","pass",35,44,3,15,"Hanson to Cole for 9. Well short of the sticks."],
+    [1,"11:35","A","punt",44,92,4,6,"Punt. Fair catch at the GAT 8."],
+    [1,"11:20","H","rush",92,89,1,10,"Landry runs for 3."],
+    [1,"10:45","H","pass",89,67,2,7,"Boudreaux to Fontenot for 22!"],
+    [1,"10:05","H","pass",67,34,1,10,"Bomb to Thibodeaux for 33!"],
+    [1,"9:25","H","rush",34,28,1,10,"Landry bounces outside for 6."],
+    [1,"8:50","H","inc",28,28,2,4,"Boudreaux's pass falls incomplete."],
+    [1,"8:15","H","pass",28,24,3,4,"Fontenot grabs 4 for the first down."],
+    [1,"7:30","H","rush",24,12,1,10,"Landry breaks free for 12!"],
+    [1,"6:45","H","td",12,0,1,10,"Boudreaux hits Thibodeaux in the corner. Touchdown, Gators!","H",7],
+    [1,"6:40","H","kickoff",65,22,0,0,"Kickoff returned to the WOL 22."],
+    [1,"6:10","A","pass",22,29,1,10,"Hanson to Pike for 7."],
+    [1,"5:30","A","rush",29,34,2,3,"Pike for 5 and a first down."],
+    [1,"4:50","A","int",34,48,1,10,"Hanson's pass is picked off by the Gators! Returned to the 48."],
+    [1,"4:20","H","rush",48,46,1,10,"Landry for 2."],
+    [1,"3:35","H","fumble",46,53,2,8,"Boudreaux is hit and fumbles. The Wolves recover at the 53."],
+    [1,"3:00","A","pass",53,69,1,10,"Hanson to Cole for 16."],
+    [1,"2:20","A","rush",69,74,1,10,"Pike for 5."],
+    [1,"1:35","A","pass",74,83,2,5,"Hanson hits Burke for 9. First down."],
+    [1,"0:00","A","qend",83,83,0,0,"End of the 1st quarter."],
+    [2,"15:00","A","rush",83,85,1,10,"Pike for 2."],
+    [2,"14:20","A","pen",85,75,2,8,"Flag! Holding on the Wolves. 10 yards."],
+    [2,"13:40","A","pass",75,81,2,18,"Hanson to Cole for 6."],
+    [2,"12:55","A","inc",81,81,3,12,"Hanson overthrows Burke. Incomplete."],
+    [2,"12:10","A","fg",81,100,4,12,"36-yard field goal is good.","A",3],
+    [2,"12:05","A","kickoff",35,75,0,0,"Kickoff returned to the GAT 25."],
+    [2,"11:30","H","rush",75,70,1,10,"Landry for 5."],
+    [2,"10:50","H","pass",70,30,2,5,"Boudreaux goes deep to Thibodeaux for 40!"],
+    [2,"10:10","H","rush",30,22,1,10,"Landry for 8."],
+    [2,"9:30","H","inc",22,22,2,2,"Incomplete. Fontenot drops it."],
+    [2,"8:55","H","rush",22,21,3,2,"Landry is stuffed for 1."],
+    [2,"8:15","H","rush",21,19,4,1,"The Gators go for it. Landry gets 2 and the first down."],
+    [2,"7:30","H","td",19,0,1,10,"Boudreaux rolls right and finds Fontenot. Touchdown, Gators!","H",7],
+    [2,"0:00","A","half",50,50,0,0,"End of the first half."],
+    [3,"15:00","A","kickoff",35,70,0,0,"Second half kickoff, returned to the GAT 30."],
+    [3,"14:25","H","pass",70,45,1,10,"Boudreaux to Fontenot for 25!"],
+    [3,"13:40","H","sack",45,54,1,10,"The Wolves get home. Boudreaux is sacked for a loss of 9."],
+    [3,"12:55","H","pass",54,34,2,19,"Boudreaux to Thibodeaux for 20 and a first down!"],
+    [3,"12:05","H","rush",34,25,1,10,"Landry for 9."],
+    [3,"11:20","H","rush",25,22,2,1,"Landry for 3. First down."],
+    [3,"10:35","H","td",22,0,1,10,"Boudreaux to Landry out of the backfield. Touchdown, Gators!","H",7],
+    [3,"10:30","H","kickoff",65,20,0,0,"Kickoff returned to the WOL 20."],
+    [3,"9:45","A","pass",20,70,1,10,"Hanson to Cole for 50! The Wolves are on the move!"],
+    [3,"8:55","A","rush",70,81,1,10,"Pike for 11. First down."],
+    [3,"8:00","A","td",81,100,1,10,"Hanson to Pike for 19 yards. Touchdown, Wolves!","A",7],
+    [3,"7:55","A","kickoff",35,75,0,0,"Kickoff returned to the GAT 25."],
+    [3,"7:10","H","rush",75,74,1,10,"Landry for 1."],
+    [3,"6:30","H","inc",74,74,2,9,"Incomplete."],
+    [3,"5:50","H","sack",74,81,3,9,"Sack! Boudreaux goes down for a loss of 7."],
+    [3,"5:05","H","punt",81,35,4,16,"Punt. Fair catch at the WOL 35."],
+    [3,"4:20","A","pass",35,47,1,10,"Hanson to Burke for 12."],
+    [3,"3:30","A","pass",47,65,1,10,"Hanson to Cole for 18. First down."],
+    [3,"0:00","A","qend",65,65,0,0,"End of the 3rd quarter."],
+    [4,"15:00","A","td",65,100,1,10,"Hanson goes long to Cole. 35 yards. Touchdown, Wolves!","A",7],
+    [4,"14:55","A","kickoff",35,75,0,0,"Kickoff returned to the GAT 25."],
+    [4,"14:10","H","rush",75,70,1,10,"Landry for 5."],
+    [4,"13:20","H","rush",70,64,2,5,"Landry for 6. First down. The clock keeps moving."],
+    [4,"12:30","H","rush",64,61,1,10,"Landry for 3."],
+    [4,"11:40","H","inc",61,61,2,7,"The pass falls incomplete."],
+    [4,"10:50","H","pass",61,53,3,7,"Boudreaux to Fontenot for 8. First down."],
+    [4,"0:00","H","final",50,50,0,0,"FINAL. Gators 21, Wolves 17."]
+  ];
+  const toObj = r => ({ q: r[0], c: r[1], o: r[2], k: r[3], a: r[4], b: r[5], dn: r[6], ytg: r[7], t: r[8], s: r[9], p: r[10] });
+
+  /* ---------- Announcer lines ---------- */
+  const LINES = {
+    coachO: {
+      td: ["Touchdown, boi! Dat's what I'm talkin' 'bout, tell ya whut!", "Put it in da house, babe! Somebody call da bayou, we gone party!"],
+      sack: ["He folded like a lawn chair on dat tackle, boi! Tell ya whut!", "Dat quarterback got hugged by a freight train, babe!"],
+      turnover: ["Gave da ball away like Christmas, boi! Ain't no gumbo for dat!", "Dat ball was loose like a goose, babe! Lawd have mercy!"],
+      fg: ["Three points, boi. Take 'em and say thank ya!", "Dat kicker got ice in his veins and hot sauce in his shoes, babe!"],
+      big: ["Dat boy ran like a wild alligator down in da bayou!", "Big play, boi! Somebody was asleep on dat one, tell ya whut!"],
+      first: ["Move da chains, babe! Dat's a fresh set o' downs!", "Dat's how ya keep da gumbo cookin', boi!"],
+      stuffed: ["Right up da middle and bam! Hit 'em in da mouth, babe!", "Dat hole closed faster than a crawfish boil, boi!"],
+      inc: ["Dat ball landed in Mississippi, boi! Wasn't nowhere near nobody!", "Incomplete, babe. Dat's why we practice, tell ya whut!"],
+      normal: ["Gotta run da ball right up da middle, boi!", "Dat defense lookin' fast like a wild alligator, babe! Next man up!"],
+      punt: ["Boot it, boi! Flip da field like a pancake, babe!", "Dat punter got a leg like a cypress tree, tell ya whut!"],
+      kickoff: ["Here we go, boi! Kick it to da moon, babe!", "Kickoff! Everybody grab a plate o' jambalaya!"],
+      pen: ["Flag on da play, babe! Dem refs been eatin' too much boudin!", "Ay, dat's a flag, boi! Ref got eagle eyes tonight!"],
+      half: ["Halftime, boi! Go get ya some cracklins and a cold drink!", "Fifteen minutes, babe! Somebody check on da band, tell ya whut!"],
+      final: ["Dat's da ball game, boi! Everybody come to da house for gumbo!", "Final whistle, babe! Respectful handshake, den we eat!"],
+      quarter: ["End o' da quarter, boi! Switch sides, babe!"]
+    },
+    rivals: {
+      td: ["{off} FAN: THIS IS A MASTERCLASS! I'm crying! / {def} FAN: Are we watching the same game? The refs are blind!", "{off} FAN: HALL OF FAME! Build him a statue! / {def} FAN: Check his Venmo history! That's a payoff!"],
+      sack: ["{def} FAN: SACK! Best defense in history! / {off} FAN: That was holding! Open your eyes, ref!", "{def} FAN: He got folded like a pizza box! / {off} FAN: Our quarterback was breathed on! Throw a flag!"],
+      turnover: ["{def} FAN: TAKEAWAY! We are unbeatable! / {off} FAN: He was clearly down! Look at the replay in your mind!", "{def} FAN: Thank you for the gift! / {off} FAN: The ball was slippery! This is rigged!"],
+      fg: ["{off} FAN: Clutch kicker! Sign him for life! / {def} FAN: Three points. Cute.", "{off} FAN: Money! / {def} FAN: Overrated. Our defense let him do it on purpose."],
+      big: ["{off} FAN: That's a huge play! Told you! / {def} FAN: Overrated. Our guys gave that away on purpose.", "{off} FAN: UNSTOPPABLE! / {def} FAN: Our cornerback was tying his shoe. That doesn't count!"],
+      first: ["{off} FAN: Moving the chains like pros! / {def} FAN: Spotted a yard short. Everybody saw it.", "{off} FAN: Keep it rolling! / {def} FAN: That ref has a gambling problem."],
+      stuffed: ["{def} FAN: STUFFED! Brick wall! / {off} FAN: The refs let them cheat!", "{def} FAN: Not in our house! / {off} FAN: Who put all those guys in the way?"],
+      inc: ["{off} FAN: Pass interference! Obviously! / {def} FAN: Incomplete! Learn the rules!", "{def} FAN: Dropped it! Hands of stone! / {off} FAN: The ball was thrown by a ghost!"],
+      normal: ["{off} FAN: That's a gain! Respect it! / {def} FAN: Two yards? We let him have it.", "{def} FAN: We have this under control. / {off} FAN: Are we watching the same game?"],
+      punt: ["{off} FAN: Strategic punt! Genius! / {def} FAN: They surrendered!", "{def} FAN: Bye bye! / {off} FAN: That was the plan the whole time."],
+      kickoff: ["{off} FAN: Here we go! Good vibes only! / {def} FAN: The kicker's cousin works for the league.", "{off} FAN: Boom! To the moon! / {def} FAN: Illegal! Probably!"],
+      pen: ["{def} FAN: FLAG! Finally somebody sees it! / {off} FAN: That's a conspiracy! Fire the refs!", "{off} FAN: What was THAT? / {def} FAN: Hold it, hold it, it was holding."],
+      half: ["{off} FAN: We're winning in my heart! / {def} FAN: Wake up, sheeple!", "{def} FAN: Halftime snacks are better on our side! / {off} FAN: Our hot dogs are legally superior!"],
+      final: ["{off} FAN: Best game ever! / {def} FAN: The refs stole it. I'm writing a letter.", "{def} FAN: We wuz robbed! / {off} FAN: Scoreboard doesn't lie!"],
+      quarter: ["{off} FAN: Time flies when we're winning! / {def} FAN: Time flies when we're robbed!"]
+    },
+    guru: {
+      td: ["Beautiful mechanics. That is what proper hydration looks like.", "Touchdown. Notice the pliability in that hip rotation."],
+      sack: ["Zero pliability in that offensive line. Disastrous standard of football.", "If he'd done his plie squats, he would have bent instead of broken."],
+      turnover: ["The mechanics on that throw were completely unacceptable.", "Dry hands. Hydrate. Use electrolytes. Give the ball back."],
+      fg: ["Three points. Clean mechanics, clean smoothie.", "The kicker's pliability is elite. Not a mineral deficiency in sight."],
+      big: ["That stride length is a gift. Imagine if he'd had his electrolytes.", "Forty yards on a diet of avocado and discipline. Incredible."],
+      first: ["Chains move. Efficient. Like a well-stretched hamstring.", "First down. Hydration wins games."],
+      stuffed: ["A 1-yard run? If they were drinking their electrolyte minerals, that's an easy 12 yards.", "No pliability, no yards. Simple science."],
+      inc: ["Unacceptable footwork. Did he even do his morning ice bath?", "Incomplete. Dry mouth. Dry hands. Dry offense."],
+      normal: ["Three yards. Acceptable. Not exceptional.", "Look at the pliability of that defensive line."],
+      punt: ["A punt is just a long exhale. Breathe through it.", "That leg swing needs a good foam roll."],
+      kickoff: ["Here we go. Everybody stretch your hips.", "Kickoff. Take a deep breath and hydrate."],
+      pen: ["A flag. Lack of discipline. Like skipping leg day.", "Penalty. Tension in the shoulders caused that."],
+      half: ["Halftime. Perfect time for a green juice.", "Fifteen minutes. Foam roll, hydrate, repeat."],
+      final: ["Final score. Hydration wins again.", "Good game. Now go stretch, everybody."],
+      quarter: ["End of the quarter. Roll out your calves."]
+    }
+  };
+  const SIDELINE = [
+    { box: "🚨 SIDELINE: \"Let's go down to Jimmy the Hot Dog Guy... Jimmy, thoughts?\" \"Well guys, the mustard-to-bun ratio here is—\" \"Thanks Jimmy, back to the action!\"", say: "Let's go down to Jimmy the Hot Dog Guy. Jimmy, thoughts? Well guys, the mustard to bun ratio here is... Thanks Jimmy, back to the action!" },
+    { box: "📣 UNHINGED FAN: \"THEY GOTTA GET THEIR HANDS UP, MAN! LARRY IS RUNNING FOR HIS LIFE OUT THERE!\"", say: "THEY GOTTA GET THEIR HANDS UP, MAN! LARRY IS RUNNING FOR HIS LIFE OUT THERE!" }
+  ];
+  const HALF_SHOWS = [
+    "THE MARCHING BAND OF 14 DOTS PERFORMS \"ODE TO A HOT DOG\"",
+    "SPECIAL GUEST: A MAN WHO PARALLEL PARKS A PICKUP IN ONE TRY",
+    "T-SHIRT CANNON MALFUNCTION: 9 SHIRTS LANDED ON THE ROOF",
+    "CHEERLEADERS ATTEMPT A HUMAN PYRAMID OF 5. 4 REMAIN."
+  ];
+
+  /* ---------- State ---------- */
+  let PLAYS = [], SCORES = [];
+  let idx = -1, playing = false, speed = 1, timer = null, waited = 0, popT = null;
+  let announcerOn = true, voiceOn = true, voiceUnlocked = false;
+
+  const field = $('field'), dotsEl = $('dots'), ball = $('ball'), ballSpan = ball.querySelector('span');
+  const overlay = $('overlay'), box = $('box'), feed = $('feed'), sit = $('sit');
+  const slider = $('slider'), msg = $('msg');
+  const offDots = [], defDots = [];
+  const OFFDX = [-2.5, -0.4, -0.8, -0.8, -0.4], OFFY = [50, 24, 38, 62, 76];
+  const DEFDX = [3, 1, 1.6, 1.6, 1],            DEFY = [50, 30, 42, 58, 70];
+  const ENDOFF = [0, -0.4, -0.8, -0.8, -0.4],   ENDDEF = [0.8, 1, 1.6, 1.6, 1];
+  const ORD = ['', '1st', '2nd', '3rd', '4th'];
+
+  for (let i = 0; i < 5; i++) {
+    [[offDots, 'off'], [defDots, 'def']].forEach(([grp, cls]) => {
+      const d = document.createElement('div');
+      d.className = 'dot ' + cls + (i === 0 ? ' main' : '');
+      dotsEl.appendChild(d); grp.push(d);
+    });
+  }
+  const nums = $('nums');
+  [10,20,30,40,50,40,30,20,10].forEach((n, k) => {
+    const s = document.createElement('i'); s.textContent = n; s.style.left = ((k + 1) * 10) + '%'; nums.appendChild(s);
+  });
+  const band = $('band');
+  for (let i = 0; i < 14; i++) { const b = document.createElement('i'); b.style.animationDelay = (i * 0.07) + 's'; band.appendChild(b); }
+
+  /* ---------- Helpers ---------- */
+  function spot(x) {
+    x = Math.round(x);
+    if (x === 50) return '50';
+    return x < 50 ? TEAMS.A.short + ' ' + x : TEAMS.H.short + ' ' + (100 - x);
+  }
+  function fill(s, p) {
+    return s.replace(/\{off\}/g, TEAMS[p.o].name).replace(/\{def\}/g, TEAMS[p.o === 'A' ? 'H' : 'A'].name);
+  }
+  function buildScores() {
+    let A = 0, H = 0;
+    SCORES = PLAYS.map(p => { if (p.s === 'A') A += p.p || 0; else if (p.s === 'H') H += p.p || 0; return { A: A, H: H }; });
+  }
+  function setTeamLabels() {
+    $('nA').textContent = TEAMS.A.short; $('nH').textContent = TEAMS.H.short;
+    $('ezLn').textContent = TEAMS.A.name.toUpperCase(); $('ezRn').textContent = TEAMS.H.name.toUpperCase();
+  }
+
+  function normalize(raw) {
+    const teams = JSON.parse(JSON.stringify(TEAMS0));
+    let list = raw;
+    if (raw && !Array.isArray(raw) && Array.isArray(raw.plays)) {
+      list = raw.plays;
+      if (raw.teams) ['A', 'H'].forEach(s => {
+        if (raw.teams[s]) {
+          teams[s].name = String(raw.teams[s].name || teams[s].name);
+          teams[s].short = String(raw.teams[s].short || teams[s].short).slice(0, 4).toUpperCase();
+        }
+      });
+    }
+    if (!Array.isArray(list) || !list.length) throw new Error('Expected a list of plays, or an object with "teams" and "plays".');
+    const plays = list.map((p, i) => {
+      const n = i + 1;
+      if (!p || typeof p !== 'object') throw new Error('Play ' + n + ' is not an object.');
+      if (KINDS.indexOf(p.k) < 0) throw new Error('Play ' + n + ': "k" must be one of ' + KINDS.join(', ') + '.');
+      if (p.o !== 'A' && p.o !== 'H') throw new Error('Play ' + n + ': "o" must be "A" or "H".');
+      ['a', 'b'].forEach(key => {
+        if (typeof p[key] !== 'number' || !isFinite(p[key]) || p[key] < 0 || p[key] > 100) throw new Error('Play ' + n + ': "' + key + '" must be a number from 0 to 100.');
+      });
+      if (p.s !== undefined && p.s !== 'A' && p.s !== 'H') throw new Error('Play ' + n + ': "s" must be "A" or "H".');
+      return {
+        q: Number.isFinite(p.q) ? p.q : 1, c: String(p.c || ''), o: p.o, k: p.k, a: p.a, b: p.b,
+        dn: Number.isFinite(p.dn) ? p.dn : 0, ytg: Number.isFinite(p.ytg) ? p.ytg : 0,
+        t: String(p.t || ''), s: p.s, p: Number.isFinite(p.p) ? p.p : 0
+      };
+    });
+    return { teams: teams, plays: plays };
+  }
+
+  function loadGame(data) {
+    TEAMS = data.teams; PLAYS = data.plays; buildScores(); setTeamLabels();
+    slider.max = String(Math.max(0, PLAYS.length - 1));
+    restart();
+  }
+
+  /* ---------- Field drawing ---------- */
+  function positions(p, phase) {
+    const dir = p.o === 'A' ? 1 : -1;
+    const kick = p.k === 'kickoff' || p.k === 'punt';
+    const fg = p.k === 'fg' || p.k === 'fgmiss';
+    if (phase === 'start') {
+      return {
+        off: OFFDX.map(d => p.a + dir * d),
+        def: kick ? ENDDEF.map(d => p.b + dir * d) : DEFDX.map(d => p.a + dir * d),
+        ball: p.a
+      };
+    }
+    const endB = p.k === 'inc' ? p.a + dir * 10 : (p.k === 'td' || p.k === 'safety' ? p.b + dir * 3 : p.b);
+    const endO = kick ? p.a + (p.b - p.a) * 0.55 : (fg ? p.a : endB);
+    const endD = fg ? p.a : (p.k === 'inc' ? p.a + dir * 3 : (kick ? p.b : endB));
+    return { off: ENDOFF.map(d => endO + dir * d), def: ENDDEF.map(d => endD + dir * d), ball: endB };
+  }
+  function apply(pos, mainY, ballY) {
+    offDots.forEach((d, i) => { d.style.left = xp(clampX(pos.off[i])) + '%'; d.style.top = (i === 0 ? mainY : OFFY[i]) + '%'; });
+    defDots.forEach((d, i) => { d.style.left = xp(clampX(pos.def[i])) + '%'; d.style.top = (i === 0 ? mainY : DEFY[i]) + '%'; });
+    ball.style.left = xp(clampX(pos.ball)) + '%'; ball.style.top = ballY + '%';
+  }
+  function markers(p) {
+    const los = $('los'), fdm = $('fdm');
+    if (p.dn > 0 && ['rush','pass','inc','sack','pen','td','int','fumble','fg','fgmiss'].indexOf(p.k) >= 0) {
+      const dir = p.o === 'A' ? 1 : -1;
+      const fd = p.a + dir * p.ytg;
+      los.hidden = false; los.style.left = xp(p.a) + '%';
+      fdm.hidden = fd < 0 || fd > 100; fdm.style.left = xp(fd) + '%';
+    } else { los.hidden = true; fdm.hidden = true; }
+  }
+  function drawPlay(p, animate) {
+    dotsEl.dataset.off = p.o;
+    const kick = p.k === 'kickoff' || p.k === 'punt' || p.k === 'fg' || p.k === 'fgmiss';
+    const still = ['qend', 'half', 'final', 'to'].indexOf(p.k) >= 0;
+    const endY = (kick || still) ? 50 : 50 + (Math.random() - 0.5) * 34;
+    field.style.setProperty('--dur', Math.max(0.25, (kick ? 1.2 : 0.8) / speed) + 's');
+    markers(p);
+    field.classList.add('snap');
+    if (animate) apply(positions(p, 'start'), 50, 50);
+    void field.offsetWidth;
+    field.classList.remove('snap');
+    if (!animate) field.classList.add('snap');
+    apply(positions(p, 'end'), endY, endY);
+    if (!animate) { void field.offsetWidth; field.classList.remove('snap'); }
+    ballSpan.classList.remove('arc');
+    if (animate && (kick || p.k === 'pass' || p.k === 'inc' || p.k === 'td' || p.k === 'int')) {
+      void ballSpan.offsetWidth; ballSpan.classList.add('arc');
+    }
+  }
+
+  /* ---------- Popups ---------- */
+  function pop(text, tone) {
+    overlay.textContent = text; overlay.dataset.tone = tone || 'gold';
+    overlay.classList.add('show');
+    clearTimeout(popT);
+    popT = setTimeout(() => overlay.classList.remove('show'), Math.max(700, 1500 / speed));
+  }
+  function shake() {
+    field.classList.remove('shake'); void field.offsetWidth; field.classList.add('shake');
+  }
+  field.addEventListener('animationend', e => { if (e.target === field) field.classList.remove('shake'); });
+
+  /* ---------- Announcer ---------- */
+  function unlockVoice() {
+    if (voiceUnlocked) return; voiceUnlocked = true;
+    try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch (e) {}
+  }
+  function say(text, mode) {
+    if (!voiceOn || !announcerOn) return;
+    try {
+      window.speechSynthesis.cancel();
+      text.split(' / ').forEach((part, k) => {
+        const u = new SpeechSynthesisUtterance(part.replace(/^[A-Za-z ]+ FAN:\s*/, ''));
+        u.rate = Math.min(1.3, 0.95 + (speed - 1) * 0.1);
+        u.pitch = mode === 'rivals' ? (k === 0 ? 1.35 : 0.75) : (mode === 'guru' ? 0.9 : 1.0);
+        window.speechSynthesis.speak(u);
+      });
+    } catch (e) {}
+  }
+  function category(p, gain, isFirst) {
+    switch (p.k) {
+      case 'td': case 'safety': return 'td';
+      case 'sack': return 'sack';
+      case 'int': case 'fumble': return 'turnover';
+      case 'fg': return 'fg';
+      case 'fgmiss': case 'inc': return 'inc';
+      case 'punt': return 'punt';
+      case 'kickoff': return 'kickoff';
+      case 'pen': return 'pen';
+      case 'half': return 'half';
+      case 'final': return 'final';
+      case 'qend': return 'quarter';
+      case 'to': return 'normal';
+    }
+    if (gain >= 20) return 'big';
+    if (isFirst) return 'first';
+    if (p.k === 'rush' && gain <= 1) return 'stuffed';
+    return 'normal';
+  }
+  function popFor(p, cat) {
+    switch (p.k) {
+      case 'td': return ['TOUCHDOWN!', 'gold'];
+      case 'safety': return ['SAFETY!', 'gold'];
+      case 'sack': return ['SACK!', 'red'];
+      case 'int': return ['INTERCEPTED!', 'red'];
+      case 'fumble': return ['FUMBLE!', 'red'];
+      case 'fg': return ['FIELD GOAL!', 'green'];
+      case 'fgmiss': return ['NO GOOD!', 'red'];
+      case 'pen': return ['FLAG!', 'red'];
+      case 'punt': return ['PUNT!', 'white'];
+      case 'kickoff': return ['KICKOFF!', 'white'];
+      case 'half': return ['HALFTIME!', 'gold'];
+      case 'final': return ['FINAL!', 'gold'];
+      case 'qend': return ['END OF Q' + p.q, 'white'];
+      case 'inc': return ['INCOMPLETE', 'white'];
+    }
+    if (cat === 'big') return ['BIG PLAY!', 'green'];
+    if (cat === 'first') return ['FIRST DOWN!', 'green'];
+    if (cat === 'stuffed') return ['STUFFED!', 'red'];
+    return null;
+  }
+
+  /* ---------- Showing a play ---------- */
+  function updateBoard(i) {
+    const p = PLAYS[i];
+    const sc = i >= 0 ? SCORES[i] : { A: 0, H: 0 };
+    $('sA').textContent = sc.A; $('sH').textContent = sc.H;
+    $('qtr').textContent = i < 0 ? 'PRE' : (p.k === 'half' ? 'HALF' : (p.k === 'final' ? 'FINAL' : 'Q' + p.q));
+    $('clk').textContent = i < 0 ? '15:00' : p.c;
+    let poss = null;
+    if (i >= 0 && ['td', 'fg', 'half', 'qend', 'final', 'safety'].indexOf(p.k) < 0) {
+      const nx = PLAYS[i + 1];
+      poss = nx ? (nx.k === 'kickoff' ? null : nx.o) : p.o;
+    }
+    $('tA').classList.toggle('has', poss === 'A');
+    $('tH').classList.toggle('has', poss === 'H');
+    if (i < 0) { sit.textContent = 'SAMPLE GAME · TAP PLAY'; return; }
+    const labels = { kickoff: 'KICKOFF', punt: 'PUNT', fg: 'FIELD GOAL TRY', fgmiss: 'FIELD GOAL TRY', half: 'HALFTIME', final: 'FINAL', qend: 'END OF QUARTER', to: 'TIMEOUT' };
+    sit.textContent = p.dn > 0 ? ORD[p.dn] + ' & ' + p.ytg + ' · BALL ON ' + spot(p.a) : (labels[p.k] || '');
+  }
+  function updateSlider() {
+    slider.value = String(Math.max(0, idx));
+    $('sliderLabel').textContent = 'Play ' + (idx + 1) + ' of ' + PLAYS.length;
+  }
+
+  function show(i, scrub) {
+    idx = i;
+    const p = PLAYS[i];
+    const dir = p.o === 'A' ? 1 : -1;
+    const gain = (p.b - p.a) * dir;
+    const isFirst = (p.k === 'rush' || p.k === 'pass') && p.dn > 0 && gain >= p.ytg;
+    const cat = category(p, gain, isFirst);
+    const mode = $('mode-select').value;
+
+    updateBoard(i); updateSlider();
+    band.classList.remove('show');
+    drawPlay(p, !scrub);
+    feed.textContent = (p.k === 'final' ? '' : 'Q' + p.q + ' ' + p.c + ' · ') + p.t;
+
+    if (scrub) {
+      clearTimeout(popT); overlay.classList.remove('show');
+      box.textContent = p.t;
+      return;
+    }
+    const pp = popFor(p, cat);
+    if (pp) pop(pp[0], pp[1]);
+    if (p.k === 'td' || p.k === 'sack' || p.k === 'int' || p.k === 'fumble' || p.k === 'safety') shake();
+
+    if (!announcerOn) { box.textContent = p.t; return; }
+
+    let boxText, voiceText;
+    const quiet = ['normal', 'inc', 'stuffed', 'first', 'punt', 'kickoff'].indexOf(cat) >= 0;
+    const r = Math.random();
+    if (quiet && r < 0.18) {
+      const s = SIDELINE[r < 0.1 ? 0 : 1];
+      boxText = s.box; voiceText = s.say;
+    } else {
+      const arr = (LINES[mode][cat] || LINES[mode].normal);
+      voiceText = fill(arr[Math.floor(Math.random() * arr.length)], p);
+      boxText = voiceText.replace(/ \/ /g, '\n');
+    }
+    if (p.k === 'half') {
+      const show = HALF_SHOWS[Math.floor(Math.random() * HALF_SHOWS.length)];
+      band.classList.add('show');
+      boxText = '🎺 HALFTIME SHOW: ' + show + '\n\n' + boxText;
+    }
+    box.textContent = boxText;
+    say(voiceText, mode);
+  }
+
+  /* ---------- Playback ---------- */
+  function schedule() {
+    clearTimeout(timer);
+    if (!playing) return;
+    waited = 0;
+    const cur = PLAYS[idx];
+    const base = idx < 0 ? 800 : (cur.k === 'half' ? 7000 : 4200) / speed;
+    timer = setTimeout(tick, base);
+  }
+  function tick() {
+    if (!playing) return;
+    let talking = false;
+    try { talking = window.speechSynthesis.speaking; } catch (e) {}
+    if (voiceOn && announcerOn && talking && speed === 1 && waited < 6000) {
+      waited += 300; timer = setTimeout(tick, 300); return;
+    }
+    step();
+  }
+  function step() {
+    if (idx + 1 >= PLAYS.length) { setPlaying(false); return; }
+    show(idx + 1, false);
+    if (idx + 1 >= PLAYS.length) { setPlaying(false); return; }
+    schedule();
+  }
+  function setPlaying(on) {
+    playing = on;
+    $('playBtn').textContent = on ? '⏸ PAUSE' : (idx + 1 >= PLAYS.length ? '⟲ REPLAY' : '▶ PLAY');
+    if (!on) clearTimeout(timer);
+  }
+  function restart() {
+    setPlaying(false);
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    clearTimeout(popT); overlay.classList.remove('show'); band.classList.remove('show');
+    idx = -1; updateBoard(-1); updateSlider();
+    const start = { o: 'A', k: 'qend', a: 50, b: 50, dn: 0, ytg: 0 };
+    drawPlay(start, false);
+    $('los').hidden = true; $('fdm').hidden = true;
+    box.textContent = 'Pick an announcer, tap PLAY, and let the madness start.';
+    feed.textContent = '';
+    $('playBtn').textContent = '▶ PLAY';
+  }
+
+  /* ---------- Controls ---------- */
+  $('playBtn').addEventListener('click', () => {
+    unlockVoice();
+    if (playing) { setPlaying(false); return; }
+    if (idx + 1 >= PLAYS.length) restart();
+    setPlaying(true);
+    step();
+  });
+  $('nextBtn').addEventListener('click', () => {
+    unlockVoice();
+    setPlaying(false);
+    if (idx + 1 < PLAYS.length) { show(idx + 1, false); $('playBtn').textContent = idx + 1 >= PLAYS.length ? '⟲ REPLAY' : '▶ PLAY'; }
+  });
+  $('speedBtn').addEventListener('click', () => {
+    speed = speed === 1 ? 2 : (speed === 2 ? 4 : 1);
+    $('speedBtn').textContent = 'SPEED ' + speed + 'x';
+    if (playing) schedule();
+  });
+  $('restartBtn').addEventListener('click', restart);
+  $('annBtn').addEventListener('click', () => {
+    announcerOn = !announcerOn;
+    $('annBtn').setAttribute('aria-pressed', String(announcerOn));
+    $('annBtn').textContent = 'ANNOUNCER ' + (announcerOn ? 'ON' : 'OFF');
+    $('voiceBtn').disabled = !announcerOn;
+    if (!announcerOn) { try { window.speechSynthesis.cancel(); } catch (e) {} if (idx >= 0) box.textContent = PLAYS[idx].t; }
+  });
+  $('voiceBtn').addEventListener('click', () => {
+    voiceOn = !voiceOn;
+    $('voiceBtn').setAttribute('aria-pressed', String(voiceOn));
+    $('voiceBtn').textContent = 'VOICE ' + (voiceOn ? 'ON' : 'OFF');
+    if (voiceOn) unlockVoice(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  });
+  slider.addEventListener('input', () => {
+    setPlaying(false);
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    show(parseInt(slider.value, 10), true);
+    $('playBtn').textContent = idx + 1 >= PLAYS.length ? '⟲ REPLAY' : '▶ PLAY';
+  });
+  $('loadBtn').addEventListener('click', () => {
+    msg.className = '';
+    try {
+      const data = normalize(JSON.parse($('json').value));
+      loadGame(data);
+      msg.className = 'ok'; msg.textContent = 'Loaded ' + data.plays.length + ' plays. Tap PLAY.';
+      sit.textContent = 'YOUR GAME · TAP PLAY';
+    } catch (e) {
+      msg.className = 'bad'; msg.textContent = 'Could not load: ' + e.message;
+    }
+  });
+  $('sampleBtn').addEventListener('click', () => {
+    loadGame({ teams: JSON.parse(JSON.stringify(TEAMS0)), plays: SAMPLE_ROWS.map(toObj) });
+    msg.className = 'ok'; msg.textContent = 'Sample game loaded.';
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && playing) setPlaying(false); });
+
+  loadGame({ teams: JSON.parse(JSON.stringify(TEAMS0)), plays: SAMPLE_ROWS.map(toObj) });
+})();
+</script>
+
+</body>
+</html>
