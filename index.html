@@ -11,7 +11,7 @@
   :root {
     color-scheme: dark;
     --bg: #111; --fg: #fff; --gold: #f2a900; --field: #2e7d32;
-    --wolf: #711c91; --gator: #ea00d9;
+    --wolf: #9d4dff; --gator: #ff2bd6;
     --panel: #222; --edge: #333; --control: #333; --control-edge: #555;
     --readout: #00ff66; --dim: #a7adb4; --red: #ff6b6b; --green: #5dff9a;
     --pixel: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
@@ -45,24 +45,25 @@
   .mark { position: absolute; top: 0; bottom: 0; width: 3px; transform: translateX(-50%); transition: left .4s; z-index: 1; }
   #los { background: #4da3ff; }
   #fdm { background: var(--gold); }
-  .dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); transition: left var(--dur) ease-in-out, top var(--dur) ease-in-out; z-index: 2; }
-  .dot.main { width: 16px; height: 16px; }
-  #dots[data-off="A"] .off, #dots[data-off="H"] .def { background: var(--wolf); box-shadow: 0 0 8px var(--wolf); }
-  #dots[data-off="H"] .off, #dots[data-off="A"] .def { background: var(--gator); box-shadow: 0 0 8px var(--gator); }
+  .dot { position: absolute; box-sizing: border-box; border: 1.5px solid #fff; width: 9px; height: 9px; border-radius: 50%; transform: translate(-50%, -50%); transition: left var(--dur) ease-in-out, top var(--dur) ease-in-out; z-index: 2; }
+  .dot.main { width: 12px; height: 12px; }
+  #dots[data-off="A"] .off, #dots[data-off="H"] .def { background: var(--wolf); box-shadow: none; }
+  #dots[data-off="H"] .off, #dots[data-off="A"] .def { background: var(--gator); box-shadow: none; }
   #ball { position: absolute; width: 14px; height: 9px; transform: translate(-50%, -50%); transition: left var(--dur) ease-in-out, top var(--dur) ease-in-out; z-index: 3; }
   #ball span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #8b4513; border: 1px solid var(--fg); box-sizing: border-box; }
   #ball span.arc { animation: arc var(--dur) ease-in-out; }
   #field.snap .dot, #field.snap #ball, #field.snap .mark { transition: none !important; }
-  @keyframes arc { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-46px) scale(1.7); } 100% { transform: translateY(0) scale(1); } }
+  @keyframes arc { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(var(--arch, -46px)) scale(1.7); } 100% { transform: translateY(0) scale(1); } }
 
-  #band { position: absolute; left: 0; right: 0; top: 30%; display: none; justify-content: space-around; z-index: 4; padding: 0 8%; }
-  #band.show { display: flex; }
-  #band i { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); animation: bob .55s ease-in-out infinite alternate; }
-  #band i:nth-child(3n+1) { background: var(--wolf); }
-  #band i:nth-child(3n+2) { background: var(--gator); }
-  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(60px); } }
+  #flag { position: absolute; top: 8%; transform: translateX(-50%); font-size: 16px; z-index: 5; }
+  .ez.cele { animation: cele .5s 4; }
+  @keyframes cele { 50% { background: var(--gold); } }
+  #band { position: absolute; inset: 0; display: none; z-index: 4; pointer-events: none; }
+  #band.show { display: block; }
+  #band i { position: absolute; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); }
+  #field.halftime .dot, #field.halftime #ball, #field.halftime .mark, #field.halftime #flag { opacity: 0; }
 
-  #overlay { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) scale(0); font-family: var(--pixel); font-size: clamp(14px, 5vw, 24px); line-height: 1.4; color: var(--gold); text-shadow: 3px 3px 0 #000; transition: transform .2s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,.72); padding: 12px 16px; border-radius: 5px; max-width: 88%; box-sizing: border-box; pointer-events: none; z-index: 6; }
+  #overlay { position: absolute; top: 17%; left: 50%; transform: translate(-50%, -50%) scale(0); font-family: var(--pixel); font-size: clamp(14px, 5vw, 24px); line-height: 1.4; color: var(--gold); text-shadow: 3px 3px 0 #000; transition: transform .2s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,.72); padding: 12px 16px; border-radius: 5px; max-width: 88%; box-sizing: border-box; pointer-events: none; z-index: 6; }
   #overlay.show { transform: translate(-50%, -50%) scale(1); }
   #overlay[data-tone="red"] { color: var(--red); }
   #overlay[data-tone="green"] { color: var(--green); }
@@ -83,6 +84,19 @@
   #status.bad { color: var(--red); }
   #status.ok { color: var(--green); }
   #box { background: var(--panel); border: 3px solid var(--edge); border-radius: 8px; min-height: 80px; padding: 15px; box-sizing: border-box; font-size: 16px; line-height: 1.4; color: var(--readout); display: flex; align-items: center; justify-content: center; white-space: pre-line; overflow-wrap: anywhere; }
+  #booth { display: flex; gap: 8px; align-items: stretch; }
+  #booth #box { flex: 1; min-width: 0; font-size: 15px; }
+  #portraits { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; justify-content: center; background: var(--panel); border: 3px solid var(--edge); border-radius: 8px; padding: 6px; }
+  #portraits[hidden] { display: none; }
+  .pcell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .portrait { width: 64px; height: 64px; border: 2px solid var(--gold); border-radius: 4px; display: block; background: #000; }
+  #portraits.two .portrait { width: 46px; height: 46px; }
+  .plate { font-family: var(--pixel); font-size: 6px; color: var(--gold); letter-spacing: 0; white-space: nowrap; }
+  .portrait .m-open { display: none; }
+  .portrait[data-mouth="open"] .m-closed { display: none; }
+  .portrait[data-mouth="open"] .m-open { display: inline; }
+  .pcell.talking .portrait { border-color: var(--fg); animation: talkbob .26s ease-in-out infinite alternate; }
+  @keyframes talkbob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
   #feed { font-size: 12px; color: var(--dim); min-height: 2.8em; line-height: 1.4; overflow-wrap: anywhere; }
   #scrub { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--dim); }
   input[type=range] { width: 100%; accent-color: var(--gold); margin: 0; min-height: 32px; }
@@ -97,8 +111,9 @@
   .fine { font-size: 11px; color: var(--dim); line-height: 1.5; }
 
   @media (prefers-reduced-motion: reduce) {
+    .pcell.talking .portrait { animation: none; }
     .dot, #ball, .mark, #overlay { transition: none; }
-    #ball span.arc, #field.shake, #band i { animation: none; }
+    #ball span.arc, #field.shake, .ez.cele { animation: none; }
   }
 </style>
 </head>
@@ -129,6 +144,7 @@
     <div class="mark" id="fdm" hidden></div>
     <div id="dots" data-off="A"></div>
     <div id="ball"><span></span></div>
+    <div id="flag" hidden>🚩</div>
     <div id="band"></div>
     <div id="overlay" data-tone="gold">KICKOFF!</div>
   </div>
@@ -145,12 +161,16 @@
       <option value="coachO">🎙️ Mode: Coach O</option>
       <option value="rivals">🎙️ Mode: Biased Rivals</option>
       <option value="guru">🎙️ Mode: Wellness Guru</option>
+      <option value="granite">🎙️ Mode: Coach Granite</option>
     </select>
     <button class="ctl" id="annBtn" aria-pressed="true">ANNOUNCER ON</button>
     <button class="ctl" id="voiceBtn" aria-pressed="true">VOICE ON</button>
   </div>
 
-  <div id="box" aria-live="polite">Pick a game and an announcer, tap PLAY, and let the madness start.</div>
+  <div id="booth">
+    <div id="portraits"></div>
+    <div id="box" aria-live="polite">Pick a game and an announcer, tap PLAY, and let the madness start.</div>
+  </div>
   <div id="feed"></div>
 
   <div id="scrub">
@@ -219,7 +239,8 @@
       var list = (d.previous || []).concat(d.current ? [d.current] : []);
       list.forEach(function (dr) { (dr.plays || []).forEach(function (p) { out.push({ p: p, drive: dr }); }); });
     }
-    if (!out.length && j && Array.isArray(j.plays)) j.plays.forEach(function (p) { out.push({ p: p, drive: null }); });
+    var flat = j && (Array.isArray(j.plays) ? j.plays : (j.plays && Array.isArray(j.plays.items) ? j.plays.items : (Array.isArray(j.items) ? j.items : null)));
+    if (!out.length && flat) flat.forEach(function (p) { out.push({ p: p, drive: null }); });
     return out;
   }
 
@@ -229,7 +250,7 @@
     if (/end of game|end game/.test(tt)) return 'final';
     if (/end of half|halftime/.test(tt)) return 'half';
     if (/end period|end of quarter|end quarter/.test(tt)) return period === 2 ? 'half' : (period >= 4 ? 'final' : 'qend');
-    if (/timeout|two.?minute/.test(tt)) return 'to';
+    if (/timeout|two.?minute/.test(tt)) return 'skip';   // dead air: leave TV timeouts out of the replay
     if (/penalty/.test(tt)) return 'pen';
     if (/touchdown/.test(tt)) return 'td';
     if (/kickoff/.test(tt)) return 'kickoff';
@@ -271,7 +292,7 @@
       return NaN;
     }
 
-    var plays = [], lastEmit = null, prevH = 0, prevA = 0, curOff = 'A', seen = {};
+    var plays = [], lastEmit = null, prevH = 0, prevA = 0, pendH = 0, pendA = 0, curOff = 'A', seen = {};
     var DOWNKINDS = ['rush', 'pass', 'inc', 'sack', 'pen', 'td', 'int', 'fumble', 'safety', 'fg', 'fgmiss', 'punt'];
 
     raw.forEach(function (it) {
@@ -292,9 +313,15 @@
       var k = kindOf(tt, period);
       if (k === 'xp' || k === 'skip' || k === null) {
         if (k === null || k === 'skip') rep.skipped[tt || '(no type)'] = (rep.skipped[tt || '(no type)'] || 0) + 1;
-        if ((dH > 0 || dA > 0) && lastEmit) { lastEmit.p += (dH || dA); if (!lastEmit.s) lastEmit.s = dH ? 'H' : 'A'; }
+        if (dH > 0 || dA > 0) {
+          if (k === 'xp' && lastEmit) { lastEmit.p += (dH || dA); if (!lastEmit.s) lastEmit.s = dH ? 'H' : 'A'; }
+          else { pendH += dH; pendA += dA; }   // score moved on a row that is not the scoring play: hold it for the next one
+        }
         return;
       }
+      var SCORING = { td: 1, fg: 1, safety: 1 };
+      if (SCORING[k]) { dH += pendH; dA += pendA; pendH = 0; pendA = 0; }
+      else if (dH > 0 || dA > 0) { pendH += dH; pendA += dA; dH = 0; dA = 0; }
 
       var startSpot = p.start || null, endSpot = p.end || null;
       var offSide = sideOf(idOf(startSpot && startSpot.team)) || sideOf(idOf(p.team)) || sideOf(it.drive && idOf(it.drive.team)) || curOff;
@@ -318,7 +345,13 @@
         if (!isFinite(a)) { rep.noGeo++; return; }
         var dir0 = o === 'A' ? 1 : -1;
         b = spotX(endSpot, recvSide || offSide);
-        if (!isFinite(b)) { var sy = num(p.statYardage); b = a + dir0 * (isFinite(sy) ? sy : (k === 'punt' ? 40 : 0)); }
+        if (!isFinite(b)) {
+          var sy = num(p.statYardage), m1 = /for (-?\d+) yards?/i.exec(txt), m2 = /punts (\d+) yards/i.exec(txt);
+          if (!isFinite(sy) && k === 'punt' && m2) sy = +m2[1];
+          if (!isFinite(sy) && m1) sy = +m1[1];
+          if (!isFinite(sy) && /no gain/i.test(txt)) sy = 0;
+          b = a + dir0 * (isFinite(sy) ? sy : (k === 'punt' ? 40 : 0));
+        }
       }
 
       var s, pts = 0;
@@ -518,6 +551,87 @@
       }
     }
   };
+  /* Coach Granite: a made-up stern, process-obsessed old-school coach. Not a real person. */
+  LINES.granite = {
+    td: ["Good. Now do it again. Six points is the minimum.", "{pl} did his job. That is all I ask. Do your job.", "That is what execution looks like. Every man, every snap.", "{rc} finished the play. No celebrating. Next drive."],
+    sack: ["That is a protection breakdown. Somebody did not do his job.", "{tk} did exactly what he was coached to do. {pl} had nowhere to go.", "That's {n} sack. That is not winning football.", "Somebody blocks that. It is not complicated."],
+    turnover: ["You cannot give the ball away. You just cannot. Period.", "{pl} lost focus for one second and it cost the whole drive.", "That is a self-inflicted wound. Fix it on the sideline."],
+    fg: ["Take the points. Good. But we are leaving touchdowns on the field.", "{pl} makes the kick. That is the process working, but we can be better."],
+    big: ["{yds} yards because somebody was not in his gap. Did not execute.", "{rc} makes the play and {tk} is out of position. Pay attention.", "Big play. Good for them, bad for us. Fix it."],
+    first: ["Move the chains. Winning teams do this every series.", "{pl} gets the first down. That is the standard. It should be every time."],
+    stuffed: ["{tk} won that one-on-one. That is what physical football looks like.", "No gain. They did not execute and the defense did."],
+    inc: ["That is a missed assignment. Somebody was not where he was supposed to be.", "{pl}, you have to be better than that. Details, details.", "Incomplete. Eyes in the right place, please."],
+    normal: ["{pl} for {yds}. Fine. Nothing special. Win the next one.", "That is a solid play. Nobody is patting anybody on the back.", "{tk} makes the tackle. That is his job."],
+    punt: ["Flip the field. That is a smart football decision.", "{pl} punts. Field position matters. Always has."],
+    kickoff: ["Cover your lanes. That is the whole job.", "Kickoff. Fundamentals. Stay in your lane."],
+    pen: ["That is a discipline problem. Penalties lose games.", "A flag. A flag is a coaching failure, and it is mine."],
+    half: ["Halftime. We are going to make adjustments and we are going to execute them.", "Get to the locker room. Fix the little things."],
+    final: ["That is the ball game. We will watch the film tomorrow and there will be corrections.", "Final. Whatever the score, there is work to do."],
+    quarter: ["End of the quarter. Reset. Do your job on the next one."],
+    sit: {
+      fourth: ["Fourth down. This is a decision about being aggressive, and I like it.", "Go for it or punt it, but do not waste a down."],
+      redzone: ["Red zone. This is where games are won. Execute.", "Inside the twenty. No excuses. Finish the drive."],
+      close: ["One score game. Every snap counts. Every assignment counts.", "This is why we practice. Stay focused."],
+      blowout: ["This is not competitive. Somebody did not prepare this week.", "That is a lack of execution on one side. It is obvious."]
+    }
+  };
+
+  /* Pre-snap lines. Tokens: {dn} {ytg} {spot} {fgd} {pl} {off} {def}. Guess lines predict a run or a pass;
+     hit and miss lines get tacked onto the reaction when the guess was right or wrong. */
+  LINES.coachO.setup = {
+    generic: ["{pl} got dem boys lined up, {dn} and {ytg} at da {spot}, boi!", "Here we go, babe! {off} gonna try somethin' on {dn} down.", "Dey comin' to da line, tell ya whut! {dn} and {ytg}!"],
+    third: ["Third and {ytg}, boi! Dis where da men get separated from da boys!", "Big third down, babe! {ytg} to go and da whole bayou holdin' its breath!", "Third and {ytg} at da {spot}. Somebody gotta make a play, tell ya whut!"],
+    fourth: ["Fourth and {ytg}, boi! Is he gone punt or is he gone dance wit da alligator?", "Fourth down, babe! Coach got dat look in his eye!"],
+    redzone: ["We in da red zone, boi! Smell dat gumbo, {dn} and {ytg}!", "{off} in close now, babe! Dis where ya earn ya paycheck!"],
+    kick: ["Kickoff time, boi! Everybody grab a plate!", "Here come da kickoff, babe! Hope da return man got his runnin' shoes!"],
+    punt: ["Punt team comin' on, boi. Gotta flip dat field!", "Fourth down and dey boot it, babe. Respectful punt!"],
+    fg: ["Field goal try, boi, from {fgd} yards! Lawd, don't mess dis up!", "{fgd} yards, babe! Dat kicker better have ice in his veins!"],
+    guessRun: ["I'm lookin' run right up da middle, boi!", "Smells like a handoff to me, babe!"],
+    guessPass: ["Dey gone throw it, boi! I feel it in my bones!", "Gotta be a pass, babe! Look at dat shotgun!"]
+  };
+  LINES.coachO.hit = ["Called it, boi!", "Told ya, babe! Tell ya whut!"];
+  LINES.coachO.miss = ["Didn't see dat comin', boi!", "Dey fooled me, babe! Lawd have mercy!"];
+
+  LINES.rivals.setup = {
+    generic: ["{off} FAN: Here we go, {dn} and {ytg}! / {def} FAN: Stop them! Please! Stop them!", "{off} FAN: Easy yards incoming! / {def} FAN: Our defense has been waiting for this."],
+    third: ["{off} FAN: Third and {ytg}, we got this! / {def} FAN: Third and {ytg}? Easy stop. Sit down.", "{def} FAN: Third down, get off the field! / {off} FAN: Watch and learn."],
+    fourth: ["{off} FAN: Go for it! / {def} FAN: They're scared! Punt it!", "{def} FAN: Fourth down, we love fourth down! / {off} FAN: You will regret this."],
+    redzone: ["{off} FAN: Red zone, baby! / {def} FAN: Hold the line! Hold it!", "{def} FAN: Not in our house! / {off} FAN: Your house has a very low ceiling."],
+    kick: ["{off} FAN: Kickoff! Good vibes only! / {def} FAN: Kickoff? Fumble incoming.", "{def} FAN: Here we go. Big return incoming. / {off} FAN: Big tackle incoming."],
+    punt: ["{off} FAN: Punt! Strategic! / {def} FAN: They surrendered!", "{def} FAN: Boot it away, coward. / {off} FAN: It's called field position."],
+    fg: ["{off} FAN: {fgd} yards, easy! / {def} FAN: Wide left. Wide left. WIDE LEFT.", "{def} FAN: Block it! Block it! / {off} FAN: It's {fgd} yards, relax."],
+    guessRun: ["{off} FAN: Run it! Run it right up the gut! / {def} FAN: We know it's a run. Everyone knows it's a run.", "{def} FAN: They're running. I can tell. / {off} FAN: You cannot tell anything."],
+    guessPass: ["{off} FAN: Throw it deep! / {def} FAN: It's a pass. Blitz! Blitz!", "{def} FAN: Pass! Pass! Cover everybody! / {off} FAN: Please don't."]
+  };
+
+  LINES.guru.setup = {
+    generic: ["{dn} and {ytg}. Take a deep breath. Everybody hydrate.", "Teams lining up. Notice the posture on the offensive line."],
+    third: ["Third and {ytg}. This is where electrolytes matter most.", "Third down. Stay loose. Tension drops footballs."],
+    fourth: ["Fourth down. A decision of the mind and the hamstrings.", "Fourth and {ytg}. Trust your mobility work."],
+    redzone: ["Red zone. Stay loose, stay pliable.", "Close to the goal line. Hydrate. Breathe. Execute."],
+    kick: ["Kickoff. Everybody stretch your hips.", "Opening the drive with a long exhale. Kickoff."],
+    punt: ["A punt. Long exhale for the whole stadium.", "Punt formation. Look at that leg swing prep."],
+    fg: ["A {fgd}-yard field goal. Calm shoulders, calm leg.", "{fgd} yards. Pliability is everything here."],
+    guessRun: ["I sense a run. The legs are loaded.", "Looks like a handoff. Strong hips."],
+    guessPass: ["I sense a pass. Look at the shoulder rotation.", "A pass is coming. I can feel the hydration."]
+  };
+  LINES.guru.hit = ["As I predicted. Mindfulness.", "Called it. Breathing helps."];
+  LINES.guru.miss = ["I did not foresee that. I need more electrolytes.", "A surprise. My intuition is dehydrated."];
+
+  LINES.granite.setup = {
+    generic: ["{dn} and {ytg}. Execute your assignment. That is all.", "Here we go. Eleven men, one job each."],
+    third: ["Third and {ytg}. This is where games are won, and lost.", "Third and {ytg}. Do your job. Do not be creative."],
+    fourth: ["Fourth and {ytg}. No margin for error. None.", "Fourth down. This is a decision about being aggressive. I like it."],
+    redzone: ["Red zone. Finish. Do not settle for three.", "Inside the twenty. Detail, discipline, execution."],
+    kick: ["Kickoff. Stay in your lane. That is the whole job.", "Special teams. Cover your lanes."],
+    punt: ["Punt. Flip the field. Smart football.", "Punt team. Field position matters. Always has."],
+    fg: ["{fgd}-yard field goal. Snap, hold, kick. Simple.", "{fgd} yards. Do not rush it."],
+    guessRun: ["I expect a run here. Establish the line of scrimmage.", "They need to run the ball. Simple as that."],
+    guessPass: ["They are throwing here. Protection is the key.", "Pass. If the line holds, it works."]
+  };
+  LINES.granite.hit = ["That is what I expected.", "As anticipated. Execution."];
+  LINES.granite.miss = ["That was not what I expected. We will talk about it later.", "They changed it up. Credit them."];
+
   const JIMMY = [
     { box: "🚨 SIDELINE: \"Let's go down to Jimmy the Hot Dog Guy... Jimmy, thoughts?\" \"Well guys, the mustard-to-bun ratio here is—\" \"Thanks Jimmy, back to the action!\"", say: "Let's go down to Jimmy the Hot Dog Guy. Jimmy, thoughts? Well guys, the mustard to bun ratio here is... Thanks Jimmy, back to the action!" },
     { box: "🚨 SIDELINE: \"Jimmy's back, folks. Jimmy, you've been out there since the second quarter. Are you okay?\" \"I have eleven hot dogs left and a dream.\" \"Thanks Jimmy.\"", say: "Jimmy's back, folks. Jimmy, you've been out there since the second quarter. Are you okay? I have eleven hot dogs left and a dream. Thanks Jimmy." }
@@ -544,15 +658,12 @@
   const overlay = $('overlay'), box = $('box'), feed = $('feed'), sit = $('sit');
   const slider = $('slider'), msg = $('msg'), statusEl = $('status');
   const offDots = [], defDots = [];
-  const OFFDX = [-2.5, -0.4, -0.8, -0.8, -0.4], OFFY = [50, 24, 38, 62, 76];
-  const DEFDX = [3, 1, 1.6, 1.6, 1],            DEFY = [50, 30, 42, 58, 70];
-  const ENDOFF = [0, -0.4, -0.8, -0.8, -0.4],   ENDDEF = [0.8, 1, 1.6, 1.6, 1];
   const ORD = ['', '1st', '2nd', '3rd', '4th'];
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 11; i++) {
     [[offDots, 'off'], [defDots, 'def']].forEach(([grp, cls]) => {
       const d = document.createElement('div');
-      d.className = 'dot ' + cls + (i === 0 ? ' main' : '');
+      d.className = 'dot ' + cls + (i === 0 && cls === 'off' ? ' main' : '');
       dotsEl.appendChild(d); grp.push(d);
     });
   }
@@ -561,7 +672,6 @@
     const s = document.createElement('i'); s.textContent = n; s.style.left = ((k + 1) * 10) + '%'; nums.appendChild(s);
   });
   const band = $('band');
-  for (let i = 0; i < 14; i++) { const b = document.createElement('i'); b.style.animationDelay = (i * 0.07) + 's'; band.appendChild(b); }
 
   /* ---------- Helpers ---------- */
   function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || ''; }
@@ -617,27 +727,70 @@
     restart();
   }
 
-  /* ---------- Field drawing ---------- */
-  function positions(p, phase) {
-    const dir = p.o === 'A' ? 1 : -1;
-    const kick = p.k === 'kickoff' || p.k === 'punt';
-    const fg = p.k === 'fg' || p.k === 'fgmiss';
-    if (phase === 'start') {
-      return {
-        off: OFFDX.map(d => p.a + dir * d),
-        def: kick ? ENDDEF.map(d => p.b + dir * d) : DEFDX.map(d => p.a + dir * d),
-        ball: p.a
-      };
-    }
-    const endB = p.k === 'inc' ? p.a + dir * 10 : (p.k === 'td' || p.k === 'safety' ? p.b + dir * 3 : p.b);
-    const endO = kick ? p.a + (p.b - p.a) * 0.55 : (fg ? p.a : endB);
-    const endD = fg ? p.a : (p.k === 'inc' ? p.a + dir * 3 : (kick ? p.b : endB));
-    return { off: ENDOFF.map(d => endO + dir * d), def: ENDDEF.map(d => endD + dir * d), ball: endB };
+  /* ---------- Field drawing: 11 on 11 with scripted motion ---------- */
+  const P = (x, y) => ({ x: x, y: y });
+  const rnd = (lo, hi) => lo + Math.random() * (hi - lo);
+  const clampY = y => Math.max(4, Math.min(96, y));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  let cur = { off: [], def: [], ball: P(50, 50) };
+  let animT = [];
+  for (let i = 0; i < 11; i++) { cur.off[i] = P(50, 50); cur.def[i] = P(50, 50); }
+
+  function cancelAnim() { animT.forEach(clearTimeout); animT = []; }
+  function render() {
+    const put = (el, pt) => { el.style.left = xp(clampX(pt.x)) + '%'; el.style.top = clampY(pt.y) + '%'; };
+    offDots.forEach((el, i) => put(el, cur.off[i]));
+    defDots.forEach((el, i) => put(el, cur.def[i]));
+    put(ball, cur.ball);
   }
-  function apply(pos, mainY, ballY) {
-    offDots.forEach((d, i) => { d.style.left = xp(clampX(pos.off[i])) + '%'; d.style.top = (i === 0 ? mainY : OFFY[i]) + '%'; });
-    defDots.forEach((d, i) => { d.style.left = xp(clampX(pos.def[i])) + '%'; d.style.top = (i === 0 ? mainY : DEFY[i]) + '%'; });
-    ball.style.left = xp(clampX(pos.ball)) + '%'; ball.style.top = ballY + '%';
+  function go(u, sec) {
+    field.style.setProperty('--dur', sec + 's');
+    if (u.off) Object.keys(u.off).forEach(k => { cur.off[k] = u.off[k]; });
+    if (u.def) Object.keys(u.def).forEach(k => { cur.def[k] = u.def[k]; });
+    if (u.ball) cur.ball = u.ball;
+    render();
+  }
+  function arcBall(px, sec) {
+    ballSpan.classList.remove('arc');
+    field.style.setProperty('--arch', (-px) + 'px');
+    field.style.setProperty('--dur', sec + 's');
+    void ballSpan.offsetWidth;
+    ballSpan.classList.add('arc');
+  }
+  function celebrate(side) {
+    const ez = $(side === 'A' ? 'ezR' : 'ezL');
+    ez.classList.remove('cele'); void ez.offsetWidth; ez.classList.add('cele');
+  }
+  function runSteps(steps, instant, delay) {
+    cancelAnim();
+    $('flag').hidden = true;
+    steps.forEach(s => {
+      const fire = () => {
+        const sec = instant ? 0 : s.dur / 1000 / speed;
+        go(s, sec);
+        if (s.flag !== undefined) { $('flag').hidden = false; $('flag').style.left = xp(s.flag) + '%'; }
+        if (!instant && s.arc) arcBall(s.arc, sec);
+        if (!instant && s.cele) celebrate(s.cele);
+      };
+      if (instant || !s.t) fire(); else animT.push(setTimeout(fire, ((delay || 0) + s.t) / speed));
+    });
+  }
+
+  function formation(p) {
+    const d = p.o === 'A' ? 1 : -1, a = p.a;
+    const f = { off: [], def: [], ball: P(a - d * 3.6, 50) };
+    f.off[0] = P(a - d * 4, 50);
+    [40, 45, 50, 55, 60].forEach((y, i) => { f.off[1 + i] = P(a - d * 0.8, y); });
+    f.off[6] = P(a - d * 5.5, 58);
+    f.off[7] = P(a - d * 0.8, 67);
+    f.off[8] = P(a - d * 0.4, 8);
+    f.off[9] = P(a - d * 0.4, 92);
+    f.off[10] = P(a - d * 1.6, 78);
+    [41, 47, 53, 59].forEach((y, i) => { f.def[i] = P(a + d * 1, y); });
+    [36, 50, 64].forEach((y, i) => { f.def[4 + i] = P(a + d * 4, y); });
+    f.def[7] = P(a + d * 5, 10); f.def[8] = P(a + d * 5, 90);
+    f.def[9] = P(a + d * 11, 30); f.def[10] = P(a + d * 11, 70);
+    return f;
   }
   function markers(p) {
     const los = $('los'), fdm = $('fdm');
@@ -648,24 +801,313 @@
       fdm.hidden = fd < 0 || fd > 100; fdm.style.left = xp(fd) + '%';
     } else { los.hidden = true; fdm.hidden = true; }
   }
-  function drawPlay(p, animate) {
+  function drawPlay(p, animate, delay) {
     dotsEl.dataset.off = p.o;
-    const kick = p.k === 'kickoff' || p.k === 'punt' || p.k === 'fg' || p.k === 'fgmiss';
-    const still = ['qend', 'half', 'final', 'to'].indexOf(p.k) >= 0;
-    const endY = (kick || still) ? 50 : 50 + (Math.random() - 0.5) * 34;
-    field.style.setProperty('--dur', Math.max(0.25, (kick ? 1.2 : 0.8) / speed) + 's');
     markers(p);
-    field.classList.add('snap');
-    if (animate) apply(positions(p, 'start'), 50, 50);
-    void field.offsetWidth;
-    field.classList.remove('snap');
-    if (!animate) field.classList.add('snap');
-    apply(positions(p, 'end'), endY, endY);
-    if (!animate) { void field.offsetWidth; field.classList.remove('snap'); }
-    ballSpan.classList.remove('arc');
-    if (animate && (kick || p.k === 'pass' || p.k === 'inc' || p.k === 'td' || p.k === 'int')) {
-      void ballSpan.offsetWidth; ballSpan.classList.add('arc');
+    const S = script(p);
+    runSteps(S, !animate, delay || 0);
+    return S.reduce((m, st) => Math.max(m, (st.t || 0) + (st.dur || 0)), 0);   // unscaled milliseconds
+  }
+
+  /* One play becomes a list of timed steps. Each step moves some dots and the ball. */
+  function script(p) {
+    const d = p.o === 'A' ? 1 : -1, a = p.a, b = p.b;
+    const gain = (b - a) * d;
+    const f = formation(p);
+    const S = [];
+    const add = (t, o, dur, extra) => { S.push(Object.assign({ t: t, dur: dur || 0 }, o, extra || {})); };
+    const ry = clampY(50 + rnd(-14, 14));
+    const RECV = [8, 9, 10, 7];                  // WR1, WR2, WR3, TE
+    const COVER = { 8: 7, 9: 8, 10: 9, 7: 10 };  // who covers whom: CB, CB, S, S
+    const arcFor = air => Math.min(75, 24 + air * 1.6);
+    const pickRecv = () => RECV[Math.floor(Math.random() * RECV.length)];
+
+    function dropback(air, tgt) {
+      const o = {}, df = {}, depth = {};
+      o[0] = P(a - d * 7.5, 50);
+      [43, 47, 50, 53, 57].forEach((y, i) => { o[1 + i] = P(a - d * 1.8, y); });
+      o[6] = P(a - d * 6, 62);
+      RECV.forEach(r => {
+        depth[r] = r === tgt ? air : rnd(6, 18);
+        o[r] = P(a + d * depth[r] * 0.9, lerp(f.off[r].y, 50, r === tgt ? 0.3 : 0.2));
+      });
+      [0, 1, 2, 3].forEach(i => { df[i] = P(a + d * 0.2, lerp(f.def[i].y, 50, 0.3)); });
+      [0, 1, 2].forEach(i => { df[4 + i] = P(a + d * 8, f.def[4 + i].y); });
+      RECV.forEach(r => { df[COVER[r]] = P(a + d * (depth[r] * 0.9 + 2.5), o[r].y); });
+      add(60, { off: o, def: df, ball: P(o[0].x, 50) }, 750);
+      return { o: o };
     }
+
+    function doRush(td) {
+      const rb = P(a - d * 3.2, 53);
+      const o = { 0: P(a - d * 3.6, 48), 6: rb }, df = {};
+      [40, 45, 50, 55, 60].forEach((y, i) => { o[1 + i] = P(a - d * 0.2, y); });
+      [0, 1, 2, 3].forEach(i => { df[i] = P(a + d * 0.4, f.def[i].y); });
+      [0, 1, 2].forEach(i => { df[4 + i] = P(a + d * 3, f.def[4 + i].y); });
+      add(60, { off: o, def: df, ball: rb }, 450);
+      const g = Math.max(0, gain), endPt = P(td ? b + d * 2.5 : b, ry);
+      const o2 = { 0: P(a - d * 3, 50), 6: endPt, 7: P(a + d * g * 0.4, 62) }, d2 = {};
+      [40, 45, 50, 55, 60].forEach((y, i) => { o2[1 + i] = P(a + d * g * 0.35, y + (ry - 50) * 0.2); });
+      [0, 1, 2, 3].forEach(i => { d2[i] = P(a + d * g * 0.15, f.def[i].y + (ry - 50) * 0.3); });
+      const k = td ? 2 : 1;
+      d2[4] = P(b + d * 0.9 * k, ry - 3); d2[5] = P(b + d * 1.0 * k, ry + 3);
+      d2[6] = P(b + d * 2 * k, ry + 7);  d2[9] = P(b + d * 2.5 * k, ry - 6); d2[10] = P(b + d * 4, ry + 2);
+      [7, 8].forEach(i => { d2[i] = P(lerp(f.def[i].x, b, 0.6), lerp(f.def[i].y, ry, 0.5)); });
+      add(560, { off: o2, def: d2, ball: P(endPt.x, endPt.y) }, Math.min(1100, 600 + g * 35), td ? { cele: p.o } : null);
+    }
+
+    function doPass(complete, td) {
+      const tgt = pickRecv();
+      const air = complete ? Math.max(2, Math.min(45, Math.round(gain * 0.75))) : Math.round(rnd(7, 22));
+      const db = dropback(air, tgt);
+      const cb = COVER[tgt];
+      const catchPt = P(a + d * (complete ? air : air + 3), db.o[tgt].y);
+      if (complete) {
+        add(850, { off: { [tgt]: catchPt }, def: { [cb]: P(a + d * (air + 2), catchPt.y + 2) }, ball: catchPt }, 650, { arc: arcFor(air) });
+        const endPt = P(td ? b + d * 3 : b, ry);
+        const d2 = { [cb]: P(td ? b + d * 4 : b + d * 0.9, ry + 2), [cb === 9 ? 10 : 9]: P(b + d * (td ? 6 : 3), ry - 5), 5: P(b + d * (td ? 6 : 2.5), ry + 4) };
+        add(1550, { off: { [tgt]: endPt }, def: d2, ball: endPt }, Math.min(1000, 500 + Math.abs(gain - air) * 40), td ? { cele: p.o } : null);
+      } else {
+        const miss = P(catchPt.x + d * 2.5, clampY(catchPt.y + rnd(-9, 9)));
+        add(850, { off: { [tgt]: catchPt }, def: { [cb]: P(catchPt.x + d * 0.8, catchPt.y + 2) }, ball: miss }, 650, { arc: arcFor(air) });
+      }
+    }
+
+    add(0, { off: f.off, def: f.def, ball: f.ball }, 0);
+    let k = p.k;
+    if (k === 'td') k = /pass/i.test(p.t) ? 'tdpass' : 'tdrush';
+
+    switch (k) {
+      case 'rush': case 'safety': doRush(false); break;
+      case 'tdrush': doRush(true); break;
+      case 'pass': doPass(true, false); break;
+      case 'tdpass': doPass(true, true); break;
+      case 'inc': doPass(false, false); break;
+      case 'sack': {
+        dropback(Math.round(rnd(6, 14)), RECV[0]);
+        const o = { 0: P(b, 50) }, df = {};
+        [1, 2, 3, 4, 5].forEach(i => { o[i] = P(lerp(a - d * 1.8, b, 0.6), f.off[i].y); });
+        df[0] = P(b + d * 0.9, 44); df[1] = P(b + d * 0.9, 50); df[2] = P(b + d * 0.9, 56);
+        df[3] = P(b + d * 1.6, 47); df[4] = P(b + d * 1.6, 53);
+        add(800, { off: o, def: df, ball: P(b, 50) }, 550);
+        break;
+      }
+      case 'int': {
+        const tgt = pickRecv(), air = Math.round(rnd(10, 22));
+        dropback(air, tgt);
+        const ix = a + d * air, pick = P(ix, 56);
+        add(850, { off: { [tgt]: P(ix - d * 1.5, 44) }, def: { 10: pick }, ball: pick }, 650, { arc: arcFor(air) });
+        add(1550, { off: { 0: P(a + d * 6, 50), [tgt]: P(b + d * 2.5, 52) }, def: { 10: P(b, 58) }, ball: P(b, 58) }, 1000);
+        break;
+      }
+      case 'fumble': {
+        dropback(Math.round(rnd(6, 14)), RECV[0]);
+        add(800, { off: { 0: P(b, 50) }, def: { 0: P(b + d * 0.9, 46), 1: P(b + d * 0.9, 52), 2: P(b + d * 1.5, 56) }, ball: P(b, 50) }, 500);
+        const loose = P(b - d * 2, 34);
+        add(1350, { def: { 1: loose }, ball: loose }, 450);
+        break;
+      }
+      case 'kickoff': {
+        const landX = p.o === 'A' ? 96 : 4;
+        const front = p.o === 'A' ? 72 : 28, second = p.o === 'A' ? 84 : 16;
+        const kys = [8, 17, 26, 35, 44, 56, 65, 74, 83, 92];
+        const o = { 0: P(a, 50) }, df = { 0: P(landX, 50) }, o2 = { 0: P(a + d * 2, 50) }, o3 = { 0: P(lerp(a, landX, 0.5), 50) };
+        const covX = lerp(a, landX, 0.72);
+        kys.forEach((y, i) => { o[1 + i] = P(a - d * 0.3, y); o2[1 + i] = P(a + d * 1.5, y); o3[1 + i] = P(covX - d * rnd(0, 3), y); });
+        [14, 30, 46, 62, 78].forEach((y, i) => { df[1 + i] = P(front, y + 2); });
+        [20, 35, 50, 65, 80].forEach((y, i) => { df[6 + i] = P(second, y); });
+        add(0, { off: o, def: df, ball: P(a, 50) }, 0);
+        add(60, { off: o2 }, 250);
+        add(350, { off: o3, ball: P(landX, 50) }, 1300, { arc: 78 });
+        const o4 = { 0: P(b - d * 6, 50) }, d4 = { 0: P(b, ry) };
+        [1, 2, 3, 4].forEach(i => { o4[i] = P(b - d * (0.8 + i * 0.3), ry + (i - 2.5) * 4); });
+        [5, 6, 7, 8, 9, 10].forEach(i => { o4[i] = P(b - d * (4 + i * 0.6), kys[i - 1]); });
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(i => { d4[i] = P(b - d * (1.5 + i * 0.5), clampY(df[i].y + (ry - df[i].y) * 0.5)); });
+        add(1750, { off: o4, def: d4, ball: P(b, ry) }, 1100);
+        break;
+      }
+      case 'punt': {
+        add(0, { off: { 0: P(a - d * 14, 50), 8: P(a - d * 0.4, 6), 9: P(a - d * 0.4, 94) }, def: { 10: P(Math.max(3, Math.min(97, b)), 50) }, ball: P(a - d * 3.6, 50) }, 0);
+        const rush = {};
+        [0, 1, 2, 3].forEach(i => { rush[i] = P(a - d * 4, f.def[i].y); });
+        add(60, { ball: P(a - d * 14, 50), def: rush }, 450);
+        const run = { 8: P(b - d * 2, 28), 9: P(b - d * 2.5, 72) };
+        [1, 2, 3, 4, 5].forEach(i => { run[i] = P(a + d * Math.max(0, gain) * 0.5, f.off[i].y); });
+        const rush2 = {};
+        [0, 1, 2, 3].forEach(i => { rush2[i] = P(a - d * 9, f.def[i].y); });
+        add(520, { ball: P(b, 50), off: run, def: rush2 }, 1500, { arc: 85 });
+        break;
+      }
+      case 'fg': case 'fgmiss': {
+        const o = { 0: P(a - d * 8, 50), 6: P(a - d * 7, 52), 7: P(a - d * 0.8, 35), 8: P(a - d * 0.8, 31), 9: P(a - d * 0.8, 65), 10: P(a - d * 0.8, 69) };
+        const df = {};
+        [30, 35, 40, 45, 50, 55, 60, 65, 70, 25, 75].forEach((y, i) => { df[i] = P(a + d * 1, y); });
+        add(0, { off: o, def: df, ball: P(a - d * 3.6, 50) }, 0);
+        add(60, { ball: P(a - d * 7, 52) }, 300);
+        const rush = {};
+        [0, 1, 2, 3].forEach(i => { rush[i] = P(a + d * 0.1, df[i].y); });
+        add(420, { off: { 0: P(a - d * 5.5, 50) }, def: rush }, 450);
+        const ky = k === 'fg' ? 50 : 50 + (Math.random() < 0.5 ? -1 : 1) * rnd(10, 16);
+        add(950, { off: { 0: P(a - d * 4, 50) }, ball: P(d > 0 ? 106 : -6, ky) }, 900, { arc: 60 });
+        break;
+      }
+      case 'pen': {
+        const dx = b - a, o = {}, df = {};
+        f.off.forEach((pt, i) => { o[i] = P(pt.x + dx, pt.y); });
+        f.def.forEach((pt, i) => { df[i] = P(pt.x + dx, pt.y); });
+        add(0, { flag: a }, 0);
+        add(800, { off: o, def: df, ball: P(f.ball.x + dx, 50) }, 700);
+        break;
+      }
+      case 'final': {
+        const o = {}, df = {};
+        for (let i = 0; i < 11; i++) { o[i] = P(44, 6 + i * 8.8); df[i] = P(56, 6 + i * 8.8); }
+        add(400, { off: o, def: df }, 1200);
+        break;
+      }
+      default: break;   // timeout, end of quarter, halftime: just the formation
+    }
+    return S;
+  }
+
+  /* ---------- Halftime show: 48 band dots, five acts ---------- */
+  const NB = 48, ACT_S = 5.5;
+  const SHOW_ACTS = ['march', 'wave', 'letters', 'hotdog', 'fireworks'];
+  const SHOW_MS = SHOW_ACTS.length * ACT_S * 1000;
+  const SHOW_TITLES = {
+    march: 'THE MARCHING BAND OF 48 DOTS', wave: 'THE WAVE (NOBODY ASKED FOR IT)',
+    letters: 'SPELLING THE TEAM NAME (WITH DOTS)', hotdog: 'ODE TO A HOT DOG', fireworks: 'FINALE: DOT FIREWORKS'
+  };
+  const WOLF = '#9d4dff', GATOR = '#ff2bd6', GOLD = '#f2a900';
+  // 3 wide by 5 tall letters, row by row
+  const FONT = {
+    A: '010101111101101', B: '110101110101110', C: '011100100100011', D: '110101101101110', E: '111100110100111',
+    F: '111100110100100', G: '011100101101011', H: '101101111101101', I: '111010010010111', J: '001001001101010',
+    K: '101101110101101', L: '100100100100111', M: '101111111101101', N: '110101101101101', O: '010101101101010',
+    P: '110101110100100', Q: '010101101110011', R: '110101110101101', S: '011100010001110', T: '111010010010010',
+    U: '101101101101111', V: '101101101101010', W: '101101111111101', X: '101101010101101', Y: '101101010010010',
+    Z: '111001010100111'
+  };
+  const bandDots = [];
+  for (let i = 0; i < NB; i++) { const e = document.createElement('i'); band.appendChild(e); bandDots.push(e); }
+  let hf = null;
+  const ease = u => u <= 0 ? 0 : (u >= 1 ? 1 : u * u * (3 - 2 * u));
+
+  function layout(act, t) {
+    const out = [];
+    if (act === 'march') {
+      for (let i = 0; i < NB; i++) {
+        const r = Math.floor(i / 8), c = i % 8;
+        out.push({ x: 12 + c * 6 + (t / ACT_S) * 28, y: 18 + r * 11 + 1.8 * Math.abs(Math.sin(t * 7 + c * 0.5)), c: c % 2 ? GATOR : WOLF, o: 1 });
+      }
+    } else if (act === 'wave') {
+      for (let i = 0; i < NB; i++) {
+        out.push({ x: 6 + i * (88 / (NB - 1)), y: 50 + 30 * Math.sin(t * 3.2 + i * 0.45), c: i % 3 === 0 ? GOLD : (i % 3 === 1 ? WOLF : GATOR), o: 1 });
+      }
+    } else if (act === 'letters') {
+      const word = String(TEAMS.H.short || 'HOME').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4) || 'HOME';
+      const L = word.length, cw = Math.min(7, 80 / (L * 4 - 1)), ch = 13;
+      const x0 = 50 - (L * 4 - 1) * cw / 2 + cw / 2, y0 = 50 - 2 * ch;
+      for (let li = 0; li < L; li++) {
+        const g = FONT[word[li]];
+        for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++) {
+          if (g[r * 3 + c] === '1' && out.length < NB) out.push({ x: x0 + (li * 4 + c) * cw, y: y0 + r * ch + 1.2 * Math.sin(t * 5 + out.length), c: GOLD, o: 1 });
+        }
+      }
+      const left = NB - out.length;
+      for (let j = 0; j < left; j++) {
+        const an = t * 1.5 + j * Math.PI * 2 / Math.max(1, left);
+        out.push({ x: 50 + 44 * Math.cos(an), y: 50 + 42 * Math.sin(an), c: '#fff', o: 1 });
+      }
+    } else if (act === 'hotdog') {
+      const bun = (i, top) => { const u = i / 13; return { x: 20 + u * 60, y: top ? 34 - 7 * Math.sin(Math.PI * u) : 66 + 7 * Math.sin(Math.PI * u), o: 1 }; };
+      for (let i = 0; i < 14; i++) out.push(Object.assign(bun(i, true), { c: '#e0a458' }));
+      for (let i = 0; i < 14; i++) out.push(Object.assign(bun(i, false), { c: '#e0a458' }));
+      for (let i = 0; i < 12; i++) out.push({ x: 22 + i * (56 / 11), y: 50, c: '#d1342f', o: 1 });
+      for (let i = 0; i < 8; i++) out.push({ x: 24 + i * (52 / 7), y: 50 + (i % 2 ? -4 : 4), c: '#ffd23f', o: 1 });
+      out.forEach((e, i) => { e.y += 1.5 * Math.sin(t * 4 + i * 0.35); });
+    } else {
+      const O = [[28, 44], [72, 44], [50, 58]], cols = ['#ffd23f', GATOR, '#5dff9a'];
+      for (let i = 0; i < NB; i++) {
+        const b = i % 3, j = Math.floor(i / 3), th = j / 16 * Math.PI * 2;
+        const u = ((t + b * 0.9) % 2.4) / 2.4, r = 42 * (1 - Math.pow(1 - u, 2));
+        out.push({ x: O[b][0] + Math.cos(th) * r * 1.5, y: O[b][1] + Math.sin(th) * r + u * u * 22, c: cols[b], o: 1 - u * u });
+      }
+    }
+    return out;
+  }
+
+  const SHOW_LINES = {
+    coachO: {
+      march: ["Look at dem boys march, babe! Dat's discipline, tell ya whut!", "Forty-eight dots and not one of 'em lost, boi!"],
+      wave: ["Do da wave, boi! Even da alligators doin' it!", "Dat wave goin' faster dan a crawfish boil, babe!"],
+      letters: ["Dey spellin' {team}! I can read, boi, dey can spell!", "Look at dat, babe! Dem dots got a good education!"],
+      hotdog: ["Dat's a hot dog, boi! Jimmy gone cry happy tears!", "Mustard on da dog, babe! Dat's da right way!"],
+      fireworks: ["Fireworks, boi! Somebody call da fire department, dis is too good!", "Boom boom, babe! Now everybody back in dey seats!"]
+    },
+    rivals: {
+      march: ["HOME FAN: Best band in the league! / AWAY FAN: They're out of step. Look at row three.", "HOME FAN: Precision! / AWAY FAN: Our band is better and it isn't even here."],
+      wave: ["HOME FAN: Everybody up! / AWAY FAN: The wave is for people who don't understand football.", "HOME FAN: Look at that wave! / AWAY FAN: Sit down. Sit down."],
+      letters: ["HOME FAN: They're spelling {team}! I'm crying! / AWAY FAN: They spelled it wrong. Probably.", "HOME FAN: Our band can spell! / AWAY FAN: A third grader could do that."],
+      hotdog: ["HOME FAN: Hot dog! Best halftime ever! / AWAY FAN: That's a sausage. Call it what it is.", "HOME FAN: Ode to the hot dog! / AWAY FAN: Mustard? Ketchup is the only answer."],
+      fireworks: ["HOME FAN: FIREWORKS! / AWAY FAN: Fire hazard. The league will hear about this.", "HOME FAN: What a finale! / AWAY FAN: Our fireworks are bigger. Trust me."]
+    },
+    guru: {
+      march: ["Marching is excellent cardio. Notice the posture on the left flank.", "Forty-eight dots. Zero electrolyte deficiencies."],
+      wave: ["The wave is a lovely full-body mobility sequence.", "Look at the pliability of that wave. Truly elite."],
+      letters: ["They spelled {team}. Good spelling is a sign of hydration.", "Clean letters. Clean smoothie. Clean life."],
+      hotdog: ["A hot dog. I will not comment on the sodium. I will comment loudly.", "That bun has no pliability whatsoever."],
+      fireworks: ["Fireworks are just celebratory breathing. Take a deep breath, everybody.", "Beautiful finale. Now hydrate."]
+    },
+    granite: {
+      march: ["That is what discipline looks like. Every man in his gap.", "They are in step. Nobody is freelancing. That is how you win."],
+      wave: ["Nobody asked for a wave. Focus on the second half.", "Waves are for the beach. We have work to do."],
+      letters: ["They spelled {team}. At least somebody here is executing.", "Good. Spell it right. Details matter."],
+      hotdog: ["A hot dog. Is that the plan for the third quarter? Because I do not like it.", "Mustard. Fine. Now clean it up."],
+      fireworks: ["Enough fireworks. Get back to the locker room and fix the tackling.", "Pretty. Doesn't win games. Let's go."]
+    }
+  };
+  Object.keys(SHOW_LINES).forEach(m => { if (LINES[m]) LINES[m].show = SHOW_LINES[m]; });
+
+  function announceAct(ai) {
+    const act = SHOW_ACTS[ai], mode = $('mode-select').value;
+    let text = '';
+    if (announcerOn && hf && hf.laps === 0) {
+      const arr = ((LINES[mode] && LINES[mode].show) || LINES.coachO.show)[act];
+      text = arr[Math.floor(Math.random() * arr.length)].replace(/\{team\}/g, TEAMS.H.name);
+      say(text, mode);
+    }
+    box.textContent = '🎺 HALFTIME SHOW: ' + SHOW_TITLES[act] + (text ? '\n\n' + text.replace(/ \/ /g, '\n') : '');
+  }
+  function showFrame(now) {
+    if (!hf) return;
+    const dt = Math.min(0.1, Math.max(0, (now - hf.last) / 1000)); hf.last = now;
+    hf.t += dt * speed;
+    const total = SHOW_ACTS.length * ACT_S;
+    if (hf.t >= total) { hf.t -= total; hf.laps++; }
+    const ai = Math.min(SHOW_ACTS.length - 1, Math.floor(hf.t / ACT_S));
+    if (ai !== hf.act) { hf.prev = hf.pos; hf.act = ai; hf.blendStart = hf.t; announceAct(ai); }
+    const tgt = layout(SHOW_ACTS[ai], hf.t - ai * ACT_S);
+    const u = ease((hf.t - hf.blendStart) / 0.8);
+    hf.pos = tgt.map((e, i) => {
+      const pv = hf.prev ? hf.prev[i] : { x: 50, y: 50 };
+      return { x: lerp(pv.x, e.x, u), y: lerp(pv.y, e.y, u), c: e.c, o: e.o };
+    });
+    bandDots.forEach((el, i) => {
+      const e = hf.pos[i];
+      el.style.left = e.x + '%'; el.style.top = e.y + '%'; el.style.background = e.c; el.style.opacity = e.o;
+    });
+    hf.raf = requestAnimationFrame(showFrame);
+  }
+  function startShow() {
+    stopShow();
+    hf = { t: 0, act: -1, prev: null, pos: null, blendStart: -10, last: performance.now(), laps: 0, raf: 0 };
+    field.classList.add('halftime'); band.classList.add('show');
+    hf.raf = requestAnimationFrame(showFrame);
+  }
+  function stopShow() {
+    if (hf) { cancelAnimationFrame(hf.raf); hf = null; }
+    field.classList.remove('halftime'); band.classList.remove('show');
   }
 
   /* ---------- Popups ---------- */
@@ -680,19 +1122,125 @@
   }
   field.addEventListener('animationend', e => { if (e.target === field) field.classList.remove('shake'); });
 
+  /* ---------- Announcer booth: original 16x16 pixel portraits with a flapping mouth ---------- */
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const DARK = '#1a1a1a';
+  const CHARS = {
+    coachO:  { name: 'COACH O',   bg: '#2d1b4e', skin: '#d9a066', shirt: '#f2a900', hat: 'cap', hatC: '#5a2d82', headset: true },
+    granite: { name: 'GRANITE',   bg: '#1e2a3a', skin: '#e8c4a0', shirt: '#12263f', hat: 'hair', hatC: '#e8e8e8', brows: '#555', headset: true },
+    guru:    { name: 'THE GURU',  bg: '#1d3b36', skin: '#c68642', shirt: '#7bd88f', hat: 'bun', hatC: '#2b1b12', band: '#2ec4b6', calm: true },
+    fanH:    { name: 'HOME FAN',  bg: '#3d1b3a', skin: '#f0c8a0', shirt: '#ff2bd6', hat: 'cap', hatC: '#ff2bd6', paint: '#ff2bd6' },
+    fanA:    { name: 'AWAY FAN',  bg: '#2a1b3d', skin: '#e0ac86', shirt: '#9d4dff', hat: 'cap', hatC: '#9d4dff', paint: '#9d4dff' },
+    jimmy:   { name: 'JIMMY',     bg: '#3d2a1b', skin: '#e0ac86', shirt: '#d1342f', hat: 'paper', stache: '#5a3a1e', mustard: true },
+    larry:   { name: 'LARRY',     bg: '#1b3d2a', skin: '#d9a066', shirt: '#ea3b3b', hat: 'messy', hatC: '#3a2a1a', sweat: true, wide: true }
+  };
+  function spriteRects(o) {
+    const R = [];
+    const r = (x, y, w, h, c) => R.push([x, y, w, h, c]);
+    r(0, 0, 16, 16, o.bg);
+    r(3, 12, 10, 4, o.shirt);
+    if (o.mustard) r(6, 13, 4, 1, '#ffd23f');
+    if (o.wide) r(7, 13, 2, 2, '#fff');
+    r(7, 11, 2, 1, o.skin);
+    r(4, 3, 8, 8, o.skin);
+    r(7, 7, 2, 1, 'rgba(0,0,0,.18)');                      // nose
+    if (o.hat === 'cap') { r(3, 1, 10, 3, o.hatC); r(2, 4, 12, 1, 'rgba(0,0,0,.35)'); }
+    if (o.hat === 'hair' || o.hat === 'bun') { r(4, 2, 8, 2, o.hatC); r(3, 3, 1, 4, o.hatC); r(12, 3, 1, 4, o.hatC); }
+    if (o.hat === 'bun') r(7, 0, 2, 2, o.hatC);
+    if (o.hat === 'paper') { r(4, 0, 8, 3, '#fff'); r(4, 3, 8, 1, '#d1342f'); }
+    if (o.hat === 'messy') { r(4, 2, 8, 2, o.hatC); r(3, 1, 2, 2, o.hatC); r(7, 0, 2, 2, o.hatC); r(11, 1, 2, 2, o.hatC); }
+    if (o.band) r(4, 3, 8, 1, o.band);
+    if (o.calm) { r(5, 6, 2, 1, DARK); r(9, 6, 2, 1, DARK); }
+    else if (o.wide) { r(5, 5, 2, 2, '#fff'); r(9, 5, 2, 2, '#fff'); r(6, 6, 1, 1, DARK); r(9, 6, 1, 1, DARK); }
+    else { r(5, 6, 1, 1, DARK); r(10, 6, 1, 1, DARK); }
+    if (o.brows) { r(4, 5, 3, 1, o.brows); r(9, 5, 3, 1, o.brows); }
+    if (o.paint) { r(4, 7, 2, 1, o.paint); r(10, 7, 2, 1, o.paint); r(4, 8, 2, 1, '#fff'); r(10, 8, 2, 1, '#fff'); }
+    if (o.stache) r(5, 8, 6, 1, o.stache);
+    if (o.sweat) { r(12, 4, 1, 2, '#7fd7ff'); r(3, 6, 1, 1, '#7fd7ff'); }
+    if (o.headset) { r(2, 5, 1, 3, '#333'); r(13, 5, 1, 3, '#333'); r(3, 2, 10, 1, '#333'); r(2, 8, 3, 1, '#333'); }
+    return R;
+  }
+  function buildPortrait(o) {
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 16 16'); svg.setAttribute('class', 'portrait'); svg.setAttribute('shape-rendering', 'crispEdges');
+    svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', o.name);
+    const rect = (g, x, y, w, h, c) => {
+      const e = document.createElementNS(SVGNS, 'rect');
+      e.setAttribute('x', x); e.setAttribute('y', y); e.setAttribute('width', w); e.setAttribute('height', h); e.setAttribute('fill', c);
+      g.appendChild(e);
+    };
+    const base = document.createElementNS(SVGNS, 'g');
+    spriteRects(o).forEach(a => rect(base, a[0], a[1], a[2], a[3], a[4]));
+    svg.appendChild(base);
+    const closed = document.createElementNS(SVGNS, 'g'); closed.setAttribute('class', 'm-closed');
+    rect(closed, 6, 9, 4, 1, '#5a1d1d');
+    const open = document.createElementNS(SVGNS, 'g'); open.setAttribute('class', 'm-open');
+    rect(open, 6, 9, 4, 2, '#5a1d1d'); rect(open, 7, 10, 2, 1, '#e0525a');
+    svg.appendChild(closed); svg.appendChild(open);
+    svg.dataset.mouth = 'closed';
+    return svg;
+  }
+  const BOOTH = {};
+  Object.keys(CHARS).forEach(k => {
+    const cell = document.createElement('div'); cell.className = 'pcell';
+    const svg = buildPortrait(CHARS[k]);
+    const plate = document.createElement('span'); plate.className = 'plate'; plate.textContent = CHARS[k].name;
+    cell.appendChild(svg); cell.appendChild(plate);
+    BOOTH[k] = { cell: cell, svg: svg };
+  });
+  let boothKeys = [], talkT = [], flapI = null;
+
+  function setPortraits(who) {
+    const keys = who === 'rivals' ? ['fanH', 'fanA'] : [BOOTH[who] ? who : 'coachO'];
+    if (keys.join() === boothKeys.join()) return;
+    boothKeys = keys;
+    const wrap = $('portraits');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    keys.forEach(k => wrap.appendChild(BOOTH[k].cell));
+    wrap.classList.toggle('two', keys.length === 2);
+  }
+  function stopTalk() {
+    talkT.forEach(clearTimeout); talkT = [];
+    clearInterval(flapI); flapI = null;
+    Object.keys(BOOTH).forEach(k => { BOOTH[k].svg.dataset.mouth = 'closed'; BOOTH[k].cell.classList.remove('talking'); });
+  }
+  function talk(text, who) {
+    stopTalk(); setPortraits(who);
+    const parts = who === 'rivals' ? text.split(' / ') : [text];
+    let t = 0;
+    parts.forEach((part, i) => {
+      const clean = part.replace(/^[A-Za-z .'-]+ FAN:\s*/, '');
+      const dur = Math.max(1100, Math.min(9000, clean.length * 62)) / (1 + (speed - 1) * 0.25);
+      const key = boothKeys[Math.min(i, boothKeys.length - 1)];
+      talkT.push(setTimeout(() => {
+        clearInterval(flapI);
+        Object.keys(BOOTH).forEach(k => { BOOTH[k].cell.classList.remove('talking'); BOOTH[k].svg.dataset.mouth = 'closed'; });
+        BOOTH[key].cell.classList.add('talking');
+        let open = false;
+        flapI = setInterval(() => { open = !open; BOOTH[key].svg.dataset.mouth = open ? 'open' : 'closed'; }, 130);
+      }, t));
+      t += dur;
+      talkT.push(setTimeout(() => {
+        clearInterval(flapI); flapI = null;
+        BOOTH[key].svg.dataset.mouth = 'closed'; BOOTH[key].cell.classList.remove('talking');
+      }, t - 40));
+    });
+  }
+
   /* ---------- Announcer ---------- */
   function unlockVoice() {
     if (voiceUnlocked) return; voiceUnlocked = true;
     try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch (e) {}
   }
-  function say(text, mode) {
+  function say(text, mode, who, queue) {
+    if (announcerOn) talk(text, who || mode);
     if (!voiceOn || !announcerOn) return;
     try {
-      window.speechSynthesis.cancel();
+      if (!queue) window.speechSynthesis.cancel();
       text.split(' / ').forEach((part, k) => {
         const u = new SpeechSynthesisUtterance(part.replace(/^[A-Za-z .'-]+ FAN:\s*/, ''));
-        u.rate = Math.min(1.3, 0.95 + (speed - 1) * 0.1);
-        u.pitch = mode === 'rivals' ? (k === 0 ? 1.35 : 0.75) : (mode === 'guru' ? 0.9 : 1.0);
+        u.rate = Math.min(1.3, (mode === 'granite' ? 0.85 : 0.95) + (speed - 1) * 0.1);
+        u.pitch = mode === 'rivals' ? (k === 0 ? 1.35 : 0.75) : (mode === 'guru' ? 0.9 : (mode === 'granite' ? 0.6 : 1.0));
         window.speechSynthesis.speak(u);
       });
     } catch (e) {}
@@ -715,7 +1263,9 @@
       pl: nm.pl, rc: p.k === 'pass' || p.k === 'td' ? nm.rc : '', tk: nm.tk,
       yds: String(Math.abs(Math.round(gain))),
       off: TEAMS[p.o].name, def: TEAMS[p.o === 'A' ? 'H' : 'A'].name,
-      n: (p.k === 'sack' && sacks >= 3) ? ordinal(sacks) : ''
+      n: (p.k === 'sack' && sacks >= 3) ? ordinal(sacks) : '',
+      dn: p.dn > 0 ? ordinal(p.dn) : '', ytg: p.ytg > 0 ? String(p.ytg) : '', spot: spot(p.a),
+      fgd: String(Math.round((p.o === 'A' ? 100 - p.a : p.a) + 17))
     };
   }
   function fillLine(s, ctx) {
@@ -792,9 +1342,9 @@
   }
 
   /* ---------- Showing a play ---------- */
-  function updateBoard(i) {
+  function updateBoard(i, preSnap) {
     const p = PLAYS[i];
-    const sc = i >= 0 ? SCORES[i] : { A: 0, H: 0 };
+    const sc = i >= 0 ? (preSnap ? (i > 0 ? SCORES[i - 1] : { A: 0, H: 0 }) : SCORES[i]) : { A: 0, H: 0 };
     $('sA').textContent = sc.A; $('sH').textContent = sc.H;
     $('qtr').textContent = i < 0 ? 'PRE' : (p.k === 'half' ? 'HALF' : (p.k === 'final' ? 'FINAL' : 'Q' + p.q));
     $('clk').textContent = i < 0 ? '15:00' : p.c;
@@ -814,6 +1364,67 @@
     $('sliderLabel').textContent = 'Play ' + (idx + 1) + ' of ' + PLAYS.length;
   }
 
+  /* ---------- Broadcast timing: setup line, snap, then reaction ---------- */
+  let beatT = [], playMs = 3000, talkLoad = 0;
+  function later(fn, ms) { beatT.push(setTimeout(fn, ms)); }
+  function clearBeats() { beatT.forEach(clearTimeout); beatT = []; }
+  const estMs = text => text.split(' / ').reduce((m, part) => m + Math.max(1100, Math.min(7000, part.replace(/^[A-Za-z .'-]+ FAN:\s*/, '').length * 62)), 0);
+  const actualType = p => (/pass/i.test(p.t) || ['pass', 'inc', 'sack', 'int'].indexOf(p.k) >= 0) ? 'pass' : 'run';
+  const REACT_CHANCE = { td: 1, sack: 1, turnover: 1, fg: 1, pen: 1, final: 1, quarter: 0.6, big: 1, first: 0.7, stuffed: 0.8, inc: 0.45, normal: 0.4, punt: 0.3, kickoff: 0.25 };
+
+  function planBeats(p, i, cat, gain, mode) {
+    const L = LINES[mode], ctx = contextFor(p, i, gain);
+    const dir = p.o === 'A' ? 1 : -1, yte = dir > 0 ? 100 - p.a : p.a;
+    const out = { setup: null, react: null, guess: null };
+    const scrim = ['rush', 'pass', 'inc', 'sack', 'int', 'fumble', 'td'].indexOf(p.k) >= 0 && p.dn > 0;
+    let key = null, chance = 0;
+    if (p.k === 'kickoff') { key = 'kick'; chance = 0.5; }
+    else if (p.k === 'punt') { key = 'punt'; chance = 0.55; }
+    else if (p.k === 'fg' || p.k === 'fgmiss') { key = 'fg'; chance = 0.9; }
+    else if (scrim) {
+      if (p.dn === 4) { key = 'fourth'; chance = 0.95; }
+      else if (yte <= 20) { key = 'redzone'; chance = 0.8; }
+      else if (p.dn === 3) { key = 'third'; chance = 0.9; }
+      else { key = 'generic'; chance = 0.3; }
+    }
+    if (talkLoad >= 3) chance *= 0.4;
+    if (speed >= 4) chance = 0; else if (speed >= 2) chance *= 0.3;
+
+    if (key && L.setup && Math.random() < chance) {
+      let pool = L.setup[key], guess = null;
+      if (scrim && (key === 'generic' || key === 'third') && L.hit && Math.random() < 0.5) {
+        const act = actualType(p), g = Math.random() < 0.6 ? act : (act === 'run' ? 'pass' : 'run');
+        guess = g === act ? 'hit' : 'miss';
+        pool = g === 'run' ? L.setup.guessRun : L.setup.guessPass;
+      }
+      const line = pickLine(pool, ctx, mode + ':setup:' + key);
+      if (line) { out.setup = { say: line, box: line.replace(/ \/ /g, '\n'), who: mode }; out.guess = guess; }
+    }
+
+    const quiet = ['normal', 'inc', 'stuffed', 'first', 'punt', 'kickoff'].indexOf(cat) >= 0;
+    const r = Math.random();
+    if (!out.setup && quiet && r < 0.14) {
+      const which = r < 0.08 ? 0 : 1, src = which === 0 ? JIMMY : LARRY;
+      const s = src[Math.min(sidelineSeen[which], src.length - 1)];
+      sidelineSeen[which]++;
+      out.react = { say: s.say, box: s.box, who: which === 0 ? 'jimmy' : 'larry' };
+    } else if (Math.random() < (REACT_CHANCE[cat] === undefined ? 0.4 : REACT_CHANCE[cat]) * (speed >= 4 ? 0.5 : 1)) {
+      const sitKey = situationFor(p, i, cat);
+      let line = null;
+      if (sitKey && Math.random() < 0.35) line = pickLine(L.sit[sitKey], ctx, mode + ':sit:' + sitKey);
+      if (!line) line = pickLine(L[cat] || L.normal, ctx, mode + ':' + cat);
+      if (!line) line = pickLine(L.normal, ctx, mode + ':normal');
+      if (line) {
+        if (out.guess && L.hit && Math.random() < 0.6) {
+          const pre = pickLine(out.guess === 'hit' ? L.hit : L.miss, ctx, mode + ':' + out.guess);
+          if (pre) line = pre + ' ' + line;
+        }
+        out.react = { say: line, box: line.replace(/ \/ /g, '\n'), who: mode };
+      }
+    }
+    return out;
+  }
+
   function show(i, scrub) {
     idx = i;
     const p = PLAYS[i];
@@ -823,50 +1434,55 @@
     const cat = category(p, gain, isFirst);
     const mode = $('mode-select').value;
 
-    updateBoard(i); updateSlider();
-    band.classList.remove('show');
-    drawPlay(p, !scrub);
-    feed.textContent = (p.k === 'final' ? '' : 'Q' + p.q + ' ' + p.c + ' · ') + p.t;
+    clearBeats();
+    const holdResult = !scrub && p.k !== 'half';          // no spoilers: score and result text wait for the snap
+    const resultText = (p.k === 'final' ? '' : 'Q' + p.q + ' ' + p.c + ' · ') + p.t;
+    updateBoard(i, holdResult); updateSlider();
+    stopShow();
+    feed.textContent = holdResult ? '' : resultText;
 
     if (scrub) {
-      clearTimeout(popT); overlay.classList.remove('show');
+      drawPlay(p, false);
+      clearTimeout(popT); overlay.classList.remove('show'); stopTalk();
       box.textContent = p.t;
       return;
     }
-    const pp = popFor(p, cat);
-    if (pp) pop(pp[0], pp[1]);
-    if (p.k === 'td' || p.k === 'sack' || p.k === 'int' || p.k === 'fumble' || p.k === 'safety') shake();
-
-    if (!announcerOn) { box.textContent = p.t; return; }
-
-    const ctx = contextFor(p, i, gain);
-    const L = LINES[mode];
-    let boxText = null, voiceText = null;
-
-    const quiet = ['normal', 'inc', 'stuffed', 'first', 'punt', 'kickoff'].indexOf(cat) >= 0;
-    const r = Math.random();
-    if (quiet && r < 0.16) {
-      const which = r < 0.09 ? 0 : 1;
-      const src = which === 0 ? JIMMY : LARRY;
-      const s = src[Math.min(sidelineSeen[which], 1)];
-      sidelineSeen[which]++;
-      boxText = s.box; voiceText = s.say;
-    } else {
-      const sitKey = situationFor(p, i, cat);
-      let line = null;
-      if (sitKey && Math.random() < 0.35) line = pickLine(L.sit[sitKey], ctx, mode + ':sit:' + sitKey);
-      if (!line) line = pickLine(L[cat] || L.normal, ctx, mode + ':' + cat);
-      if (!line) line = pickLine(L.normal, ctx, mode + ':normal');
-      voiceText = line || p.t;
-      boxText = voiceText.replace(/ \/ /g, '\n');
-    }
     if (p.k === 'half') {
-      const hs = HALF_SHOWS[Math.floor(Math.random() * HALF_SHOWS.length)];
-      band.classList.add('show');
-      boxText = '🎺 HALFTIME SHOW: ' + hs + '\n\n' + boxText;
+      drawPlay(p, true, 0);
+      const hp = popFor(p, cat); if (hp) pop(hp[0], hp[1]);
+      startShow();
+      playMs = (SHOW_MS + 1500) / speed;
+      return;
     }
-    box.textContent = boxText;
-    say(voiceText, mode);
+
+    const plan = announcerOn ? planBeats(p, i, cat, gain, mode) : { setup: null, react: null };
+    const sp = (1 + (speed - 1) * 0.25) / (voiceOn ? 1 : 0.65);   // reading is faster than speech
+    const setupMs = plan.setup ? Math.min(4200, estMs(plan.setup.say)) / sp : 0;
+    const actMs = drawPlay(p, true, setupMs * speed) / speed;
+
+    // beat 1: the setup, while the teams line up
+    if (plan.setup) { box.textContent = plan.setup.box; say(plan.setup.say, mode, plan.setup.who); }
+    else box.textContent = p.dn > 0 ? ORD[p.dn] + ' and ' + p.ytg + ' at the ' + spot(p.a) + '.' : '…';
+
+    // popups and shake land when the play happens
+    const early = ['kickoff', 'punt', 'pen', 'qend', 'final', 'to'].indexOf(p.k) >= 0;
+    const impactAt = setupMs + (early ? 0 : actMs * 0.65);
+    later(() => { updateBoard(i); feed.textContent = resultText; }, impactAt);
+    const pp = popFor(p, cat);
+    if (pp) later(() => pop(pp[0], pp[1]), impactAt);
+    if (['td', 'sack', 'int', 'fumble', 'safety'].indexOf(p.k) >= 0) later(shake, impactAt);
+
+    // beat 2: the reaction, right after the play ends
+    const rAt = setupMs + actMs + 250;
+    let end = rAt;
+    if (plan.react) {
+      later(() => { box.textContent = plan.react.box; say(plan.react.say, mode, plan.react.who, true); }, rAt);
+      end = rAt + Math.min(6500, estMs(plan.react.say) / sp);
+    } else {
+      later(() => { box.textContent = p.t; }, rAt);
+    }
+    playMs = Math.max(2000, end + 600);
+    talkLoad = Math.max(0, talkLoad - 1) + (plan.setup ? 1 : 0) + (plan.react ? 1 : 0);
   }
 
   /* ---------- Playback ---------- */
@@ -875,14 +1491,14 @@
     if (!playing) return;
     waited = 0;
     const cur = PLAYS[idx];
-    const base = idx < 0 ? 800 : (cur.k === 'half' ? 7000 : 4200) / speed;
+    const base = idx < 0 ? 800 : playMs;
     timer = setTimeout(tick, base);
   }
   function tick() {
     if (!playing) return;
     let talking = false;
     try { talking = window.speechSynthesis.speaking; } catch (e) {}
-    if (voiceOn && announcerOn && talking && speed === 1 && waited < 6000) {
+    if (voiceOn && announcerOn && talking && speed === 1 && waited < 3000) {
       waited += 300; timer = setTimeout(tick, 300); return;
     }
     step();
@@ -905,7 +1521,8 @@
   function restart() {
     setPlaying(false);
     try { window.speechSynthesis.cancel(); } catch (e) {}
-    clearTimeout(popT); overlay.classList.remove('show'); band.classList.remove('show');
+    clearBeats(); stopTalk(); talkLoad = 0;
+    clearTimeout(popT); overlay.classList.remove('show'); stopShow();
     idx = -1; updateBoard(-1); updateSlider();
     drawPlay({ o: 'A', k: 'qend', a: 50, b: 50, dn: 0, ytg: 0 }, false);
     $('los').hidden = true; $('fdm').hidden = true;
@@ -919,7 +1536,11 @@
   async function getJSON(url) {
     let r;
     try { r = await fetch(url, { cache: 'no-store' }); }
-    catch (e) { throw new Error('Could not reach ESPN (' + e.message + '). The browser may have blocked the request.'); }
+    catch (e1) {
+      await new Promise(res => setTimeout(res, 800));
+      try { r = await fetch(url, { cache: 'no-store' }); }
+      catch (e) { throw new Error('Could not reach ESPN (' + e.message + '). The browser may have blocked the request.'); }
+    }
     if (!r.ok) throw new Error('ESPN answered with error ' + r.status + '.');
     return r.json();
   }
@@ -963,13 +1584,25 @@
       $('diag').value = 'Game list error: ' + e.message;
     }
   }
+  async function fetchGame(id) {
+    const j = await getJSON(API + '/summary?event=' + id);
+    let res = window.ESPN.adaptSummary(j), src = 'summary';
+    if (!res.plays.length) {
+      try {
+        const core = await getJSON('https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/' + id + '/competitions/' + id + '/plays?limit=1000');
+        const r2 = window.ESPN.adaptSummary({ header: j.header, boxscore: j.boxscore, plays: core.items || [] });
+        if (r2.plays.length) { res = r2; src = 'core plays feed'; }
+      } catch (e) { res.report += '\nBackup plays feed failed: ' + e.message; }
+    }
+    res.report = 'Source: ' + src + '\n' + res.report;
+    return { j: j, res: res };
+  }
   async function loadEvent(id, state) {
     stopLive(); currentEvent = id; eventState = state;
     if (state === 'pre') { setStatus('That game has not kicked off yet. Pick another.'); return; }
     setStatus('Loading plays…');
     try {
-      const j = await getJSON(API + '/summary?event=' + id);
-      const res = window.ESPN.adaptSummary(j);
+      const res = (await fetchGame(id)).res;
       $('diag').value = res.report;
       if (!res.plays.length) throw new Error('No plays found in the data yet. See the data report below.');
       loadGame(res);
@@ -985,9 +1618,12 @@
   async function pollLive() {
     if (!liveActive() || !currentEvent) return;
     try {
-      const j = await getJSON(API + '/summary?event=' + currentEvent);
-      const res = window.ESPN.adaptSummary(j);
+      const g = await fetchGame(currentEvent), j = g.j, res = g.res;
       $('diag').value = res.report;
+      try {
+        const stt = j.header.competitions[0].status.type;
+        if (stt && stt.completed) { eventState = 'post'; setStatus('The game is over. Finishing the replay.', 'ok'); }
+      } catch (e) {}
       if (res.plays.length > PLAYS.length) {
         PLAYS = res.plays; buildScores();
         slider.max = String(Math.max(0, PLAYS.length - 1)); updateSlider();
@@ -1074,7 +1710,26 @@
     const first = document.createElement('option'); first.value = ''; first.textContent = 'This week'; w.appendChild(first);
     for (let n = 1; n <= 18; n++) { const o = document.createElement('option'); o.value = String(n); o.textContent = 'Week ' + n; w.appendChild(o); }
   })();
+  /* ---------- Remember settings (best effort, never required) ---------- */
+  function saveSet() {
+    try { localStorage.setItem('unhinged-settings', JSON.stringify({ mode: $('mode-select').value, ann: announcerOn, voice: voiceOn })); } catch (e) {}
+  }
+  function loadSet() {
+    try {
+      const v = JSON.parse(localStorage.getItem('unhinged-settings') || '{}');
+      if (v.mode && Array.prototype.some.call($('mode-select').options, o => o.value === v.mode)) $('mode-select').value = v.mode;
+      if (v.voice === false && voiceOn) $('voiceBtn').click();
+      if (v.ann === false && announcerOn) $('annBtn').click();
+    } catch (e) {}
+  }
+  $('mode-select').addEventListener('change', () => { saveSet(); stopTalk(); setPortraits($('mode-select').value); });
+  $('annBtn').addEventListener('click', () => { $('portraits').hidden = !announcerOn; if (!announcerOn) stopTalk(); });
+  $('annBtn').addEventListener('click', saveSet);
+  $('voiceBtn').addEventListener('click', saveSet);
   useSample();
+  loadSet();
+  setPortraits($('mode-select').value);
+  $('portraits').hidden = !announcerOn;
   fetchGames();
 })();
 </script>
