@@ -197,6 +197,14 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
 #soundBox{margin:0}
 #soundBox[hidden]{display:none}
 .vols{padding:2px}
+#breakCard{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(135deg,#7a160f,#c2410c);text-align:center;padding:6px}
+#breakCard.show{display:flex}
+#breakCard .bcTop{font-family:var(--pixel);font-size:8px;color:#fff;opacity:.9;letter-spacing:1px}
+#breakCard .bcIco{font-size:34px;line-height:1.1}
+#breakCard .bcName{font-family:var(--pixel);font-size:15px;color:#ffd23f;text-shadow:1px 1px 0 #000}
+#breakCard .bcTag{font:600 12px/1.2 system-ui,sans-serif;color:#fff}
+#breakCard .bcBack{font-family:var(--pixel);font-size:9px;color:#fff;background:rgba(0,0,0,.45);padding:5px 8px;border-radius:4px;margin-top:2px}
+#breakCard .bcLbl{position:absolute;top:4px;right:6px;font:700 8px/1 system-ui,sans-serif;color:rgba(255,255,255,.85)}
 #gameSel{flex:1 1 150px}
 #weekSel{flex:0 0 auto}
 #meters{display:none}
@@ -239,6 +247,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     <div id="flag" hidden>🚩</div>
     <div id="band"></div>
     <div id="rtag" hidden></div>
+    <div id="breakCard" aria-live="polite"><span class="bcLbl">DEMO AD</span><span class="bcTop">⏸ BREAK IN THE ACTION</span><span class="bcIco">🥪</span><span class="bcName">SLOPPY JOE'S</span><span class="bcTag"></span><span class="bcBack">Back soon</span></div>
   </div>
   <div id="mini" aria-hidden="true"><i id="miniLos"></i><i id="miniFd"></i><b id="miniBall"></b></div>
   <!-- AD SLOT. Right now this shows a made-up demo ad. A real ad network's code (for example Google AdSense) would go inside this div. -->
@@ -483,6 +492,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       var ytg = (dn > 0 && isFinite(dist)) ? dist : 0;
 
       var out = { q: period, c: clock, o: o, k: k, a: r1(clamp(a)), b: r1(clamp(b)), dn: dn, ytg: ytg, t: txt, s: s, p: pts };
+      var wcl = Date.parse(p.wallclock); if (isFinite(wcl)) out.w = wcl;   // when ESPN logged the play (real clock)
       plays.push(out);
       lastEmit = out;
       rep.kinds[k] = (rep.kinds[k] || 0) + 1;
@@ -2067,6 +2077,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   }
 
   function show(i, scrub) {
+    hideBreak();
     idx = i;
     const p = PLAYS[i];
     const dir = p.o === 'A' ? 1 : -1;
@@ -2347,12 +2358,53 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   })();
 
   /* ---------- Playback ---------- */
-  function schedule() {
-    clearTimeout(timer);
+  /* ---------- Live delay: show plays about 75 seconds behind real time, at their real spacing ---------- */
+  const LIVE_DELAY = 75000, BREAK_GAP = 90000;     // delay behind real time; a gap this long between plays is a break
+  let breakT = null, breakI = null, breakDue = null;
+  const delayedLive = () => followLive && PLAYS.some(p => p.w);
+  function breakVisible() { return $('breakCard').classList.contains('show'); }
+  function paintBreak() {
+    const card = $('breakCard'), ad = $('adSlot');
+    card.querySelector('.bcIco').textContent = ad.querySelector('.adIco').textContent;
+    card.querySelector('.bcName').textContent = ad.querySelector('.adName').textContent;
+    card.querySelector('.bcTag').textContent = ad.querySelector('.adTag').textContent;
+    let t = 'Back soon';
+    if (breakDue) {
+      const sec = Math.round((breakDue - Date.now()) / 1000);
+      t = sec > 3 ? 'Back in about ' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : 'Back any second…';
+    }
+    card.querySelector('.bcBack').textContent = t;
+  }
+  function showBreak(due) {
+    breakDue = due || null; paintBreak();
+    $('breakCard').classList.add('show');
+    clearInterval(breakI); breakI = setInterval(paintBreak, 1000);
+  }
+  function hideBreak() {
+    clearTimeout(breakT); clearInterval(breakI); breakI = null; breakDue = null;
+    $('breakCard').classList.remove('show');
+  }
+  function edgeBreak() {   // nothing newer than the last play: if it stays quiet well past a normal gap, call it a break
+    const cur = PLAYS[idx]; clearTimeout(breakT);
+    if (cur && cur.w) breakT = setTimeout(() => { if (waitingForLive) showBreak(null); }, Math.max(1500, cur.w + LIVE_DELAY + 60000 - Date.now()));
+  }
+  function schedule(fresh) {
+    clearTimeout(timer); clearTimeout(breakT);
     if (!playing) return;
     waited = 0;
-    const cur = PLAYS[idx];
-    const base = idx < 0 ? 800 : playMs;
+    let base = idx < 0 ? 800 : playMs;
+    if (delayedLive()) {
+      const cur = PLAYS[idx], nx = PLAYS[idx + 1];
+      if (nx) {
+        const due = (nx.w || (cur && cur.w) || 0) + LIVE_DELAY, wait = due - Date.now();
+        base = Math.max(fresh ? 0 : (idx < 0 ? 800 : playMs), wait);
+        if (breakVisible()) breakDue = due;
+        else if (cur && cur.w && nx.w && nx.w - cur.w >= BREAK_GAP) {
+          const startAt = fresh ? 0 : playMs + 1200;
+          if (base - startAt > 5000) breakT = setTimeout(() => showBreak(due), startAt);
+        }
+      }
+    }
     timer = setTimeout(tick, base);
   }
   function tick() {
@@ -2367,7 +2419,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   function liveActive() { return followLive && eventState === 'in'; }
   function step() {
     if (idx + 1 >= PLAYS.length) {
-      if (liveActive()) { waitingForLive = true; setStatus('Caught up with the game. Waiting for the next play…'); return; }
+      if (liveActive()) { waitingForLive = true; setStatus('Caught up with the game. Waiting for the next play…'); edgeBreak(); return; }
       setPlaying(false); return;
     }
     show(idx + 1, false);
@@ -2377,7 +2429,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   function setPlaying(on) {
     playing = on;
     $('playBtn').textContent = on ? '⏸ PAUSE' : (idx + 1 >= PLAYS.length && PLAYS.length ? '⟲ REPLAY' : '▶ PLAY');
-    if (!on) { clearTimeout(timer); waitingForLive = false; }
+    if (!on) { clearTimeout(timer); waitingForLive = false; hideBreak(); }
   }
   function restart() {
     setPlaying(false);
@@ -2406,7 +2458,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     return r.json();
   }
   function stopLive() {
-    followLive = false; waitingForLive = false;
+    followLive = false; waitingForLive = false; hideBreak();
     clearInterval(liveTimer); liveTimer = null;
     $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBtn').textContent = 'FOLLOW LIVE';
   }
@@ -2482,7 +2534,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       loadGame(res);
       $('liveBtn').hidden = state !== 'in';
       sit.textContent = 'TAP PLAY';
-      setStatus('Loaded ' + res.plays.length + ' plays. Tap PLAY' + (state === 'in' ? ', or FOLLOW LIVE to jump to now.' : '.') + scoreCheck(g0.j), 'ok');
+      setStatus('Loaded ' + res.plays.length + ' plays. Tap PLAY' + (state === 'in' ? ', or FOLLOW LIVE to watch it unfold about a minute behind real time.' : '.') + scoreCheck(g0.j), 'ok');
     } catch (e) {
       setStatus('Could not load that game. ' + e.message, 'bad');
       if (!$('diag').value) $('diag').value = 'Load error: ' + e.message;
@@ -2501,8 +2553,8 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       if (res.plays.length > PLAYS.length) {
         PLAYS = res.plays; buildScores();
         slider.max = String(Math.max(0, PLAYS.length - 1)); updateSlider();
-        setStatus('Live: ' + PLAYS.length + ' plays so far. Updated ' + nowStr() + '. The feed can run about a minute behind the TV.' + scoreCheck(j), 'ok');
-        if (playing && waitingForLive) { waitingForLive = false; step(); }
+        setStatus('Live: ' + PLAYS.length + ' plays so far. Updated ' + nowStr() + '. Plays show about a minute behind real time so they flow smoothly.' + scoreCheck(j), 'ok');
+        if (playing && waitingForLive) { waitingForLive = false; if (delayedLive()) schedule(true); else step(); }
       }
     } catch (e) { setStatus('Live update failed: ' + e.message, 'bad'); }
   }
@@ -2531,11 +2583,19 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     if (followLive) { stopLive(); setPlaying(false); setStatus('Stopped following live.'); return; }
     followLive = true;
     $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBtn').textContent = 'LIVE: ON';
-    if (PLAYS.length) { show(PLAYS.length - 1, true); }
+    const timed = PLAYS.some(p => p.w);
+    if (PLAYS.length) {
+      if (timed) {
+        let k = -1; const now = Date.now();
+        for (let i = 0; i < PLAYS.length; i++) { if (PLAYS[i].w && PLAYS[i].w + LIVE_DELAY <= now) k = i; else if (PLAYS[i].w) break; }
+        if (k >= 0) show(k, true);
+      } else show(PLAYS.length - 1, true);
+    }
     setPlaying(true);
-    waitingForLive = true;
-    setStatus('Following live. New plays will animate as they arrive.', 'ok');
-    clearInterval(liveTimer); liveTimer = setInterval(pollLive, 20000);
+    if (timed && idx + 1 < PLAYS.length) schedule(true);
+    else { waitingForLive = true; if (timed) edgeBreak(); }
+    setStatus(timed ? 'Following live, about a minute behind real time so the plays flow smoothly.' : 'Following live. New plays will animate as they arrive.', 'ok');
+    clearInterval(liveTimer); liveTimer = setInterval(pollLive, 15000);
     pollLive();
   });
   $('annBtn').addEventListener('click', () => {
