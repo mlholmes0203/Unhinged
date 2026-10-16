@@ -67,8 +67,9 @@
   #band i { position: absolute; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); }
   #field.halftime .dot, #field.halftime #ball, #field.halftime .mark, #field.halftime #flag { opacity: 0; }
 
-  #overlay { position: absolute; top: 17%; left: 50%; transform: translate(-50%, -50%) scale(0); font-family: var(--pixel); font-size: clamp(14px, 5vw, 24px); line-height: 1.4; color: var(--gold); text-shadow: 3px 3px 0 #000; transition: transform .2s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,.72); padding: 12px 16px; border-radius: 5px; max-width: 88%; box-sizing: border-box; pointer-events: none; z-index: 6; }
-  #overlay.show { transform: translate(-50%, -50%) scale(1); }
+  #popStrip { height: 46px; display: flex; align-items: center; justify-content: center; margin: 4px 0 2px; }
+  #overlay { font-family: var(--pixel); font-size: clamp(14px, 5.2vw, 24px); line-height: 1.25; color: var(--gold); text-shadow: 3px 3px 0 #000; opacity: 0; transform: scale(.6); transition: transform .2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity .15s; background: rgba(0,0,0,.72); padding: 7px 14px; border-radius: 5px; max-width: 100%; box-sizing: border-box; text-align: center; pointer-events: none; }
+  #overlay.show { opacity: 1; transform: scale(1); }
   #overlay[data-tone="red"] { color: var(--red); }
   #overlay[data-tone="green"] { color: var(--green); }
   #overlay[data-tone="white"] { color: var(--fg); }
@@ -119,6 +120,14 @@
   #miniLos { background: #4da3ff; }
   #miniFd { background: var(--gold); }
   #miniBall { position: absolute; top: 1px; width: 8px; height: 6px; border-radius: 50%; background: #8b4513; border: 1px solid #fff; transform: translateX(-50%); box-sizing: border-box; }
+  #stands[hidden] { display: none !important; }
+  /* Ad slot: standard 320x50 mobile banner. Fixed size so the page never jumps when an ad loads. */
+  #adSlot { position: relative; width: 320px; max-width: 100%; height: 50px; margin: 8px auto; display: flex; align-items: center; gap: 9px; padding: 0 10px; box-sizing: border-box; overflow: hidden; border-radius: 6px; border: 2px solid #ffd23f; background: linear-gradient(90deg, #a61e16, #e8590c); color: #fff; }
+  #adSlot .adIco { font-size: 26px; line-height: 1; }
+  #adSlot .adTxt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  #adSlot .adName { font-family: var(--pixel); font-size: 11px; color: #ffd23f; text-shadow: 2px 2px 0 #000; white-space: nowrap; }
+  #adSlot .adTag { font: 600 11px/1.1 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #adSlot .adLbl { position: absolute; top: 2px; right: 5px; font: 700 8px/1 system-ui, sans-serif; letter-spacing: .06em; color: rgba(255,255,255,.85); }
   #sponsor { text-align: center; font-size: 11px; color: var(--dim); border: 1px dashed var(--control-edge); border-radius: 8px; padding: 8px; }
   #sponsor b { color: var(--gold); font-family: var(--pixel); font-size: 9px; }
   #stands { display: flex; justify-content: space-between; gap: 2px; font-size: 18px; line-height: 1.2; padding: 2px 4px; background: linear-gradient(90deg, rgba(113,28,145,.35) 45%, rgba(60,60,60,.3) 45% 55%, rgba(234,0,217,.3) 55%); border-radius: 6px; }
@@ -152,6 +161,51 @@
     .dot, #ball, .mark, #overlay { transition: none; }
     #ball span.arc, #field.shake, .ez.cele { animation: none; }
   }
+.dot { transition: transform .15s ease-out; }
+.dot.squash { transform: translate(-50%, -50%) scale(1.8, .38); }
+.dot.jig { animation: jig .36s ease-in-out 6; z-index: 5; }
+@keyframes jig { 0%, 100% { transform: translate(-50%, -50%) rotate(0); } 25% { transform: translate(-50%, -115%) rotate(-25deg) scale(1.25); } 75% { transform: translate(-50%, -115%) rotate(25deg) scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { .dot.jig { animation: none; } .dot.squash { transform: translate(-50%, -50%); } }
+.vols{display:flex;flex-wrap:wrap;gap:14px;padding:8px 2px}
+#soundBox{margin:6px 0}
+#soundBox summary{cursor:pointer;font:700 12px/1 system-ui,sans-serif;letter-spacing:.08em;color:#cfd8e3;padding:8px 2px}
+.vol{display:flex;align-items:center;gap:8px;font:700 11px/1 system-ui,sans-serif;letter-spacing:.08em;color:#cfd8e3;flex:1 1 220px}
+.vol input{flex:1;min-width:90px;height:28px;accent-color:#ffd23f}
+.vol b{min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---- Fit-on-one-screen layout: everything needed to watch sits in the top of the page; extras are below ---- */
+.wrap{gap:6px}
+body{padding:6px 16px 16px}
+h1{font-size:13px;margin:0}
+select{min-height:36px;padding:4px 8px;font-size:14px}
+.row{gap:6px}
+#status{font-size:10px;min-height:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#board{padding:5px 8px;gap:6px;border-width:2px}
+.team{gap:2px;padding-bottom:3px;border-bottom-width:3px}
+.ts{font-size:17px}
+.mid{gap:3px}
+#sit{font-size:8px;min-height:1.2em;line-height:1.3}
+#popStrip{height:32px;margin:0}
+#overlay{font-size:clamp(12px,4.4vw,19px);padding:4px 12px}
+#field{height:176px}
+#adSlot{margin:2px auto}
+button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
+#box,#booth #box{min-height:48px;padding:8px 10px;font-size:13px}
+#feed{display:none}
+#bubbleBar{min-height:0}
+#bubbleBar:not(.on){display:none}
+#soundBox{margin:0}
+#soundBox[hidden]{display:none}
+.vols{padding:2px}
+#gameSel{flex:1 1 150px}
+#weekSel{flex:0 0 auto}
+#meters{display:none}
+#scrub{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 8px}
+#scrub label{grid-row:1;grid-column:1;text-align:left;font-size:11px}
+#scrub .row{grid-row:1;grid-column:2}
+#scrub input[type=range]{grid-row:2;grid-column:1/-1;min-height:28px}
+#restartBtn{min-height:30px;padding:3px 10px}
+#adSlot .adName{text-shadow:1px 1px 0 #000}
 </style>
 </head>
 <body>
@@ -172,6 +226,7 @@
   </div>
   <div id="sit">SAMPLE GAME · TAP PLAY</div>
 
+  <div id="popStrip"><div id="overlay" data-tone="gold">KICKOFF!</div></div>
   <div id="field">
     <div class="ez" id="ezL"><span id="ezLn"></span></div>
     <div class="ez" id="ezR"><span id="ezRn"></span></div>
@@ -184,40 +239,52 @@
     <div id="flag" hidden>🚩</div>
     <div id="band"></div>
     <div id="rtag" hidden></div>
-    <div id="overlay" data-tone="gold">KICKOFF!</div>
   </div>
   <div id="mini" aria-hidden="true"><i id="miniLos"></i><i id="miniFd"></i><b id="miniBall"></b></div>
-  <div id="stands" aria-hidden="true"><span>🙂</span><span>😐</span><span>🙂</span><span>🧔</span><span>🙂</span><span>😐</span><span>👴</span><span>🙂</span><span>😐</span></div>
-  <div id="bubbleBar" role="status"></div>
-  <div id="meters">
-    <div class="meter"><span id="mChaosL">CHAOS · CALM</span><div class="track"><i id="mChaos"></i></div></div>
-    <div class="meter"><span id="mAngerL">DAD ANGER · CHILL</span><div class="track"><i id="mAnger"></i></div></div>
-    <div class="meter"><span id="mVibeL">VIBES · EVEN</span><div class="track vibe"><i id="mVibe"></i><b></b></div></div>
+  <!-- AD SLOT. Right now this shows a made-up demo ad. A real ad network's code (for example Google AdSense) would go inside this div. -->
+  <div id="adSlot" role="complementary" aria-label="Sponsor">
+    <span class="adIco">🥪</span>
+    <span class="adTxt"><span class="adName">SLOPPY JOE'S</span><span class="adTag">Messy. Delicious. Kids eat free Tuesdays.</span></span>
+    <span class="adLbl">DEMO AD</span>
   </div>
+  <div id="stands" aria-hidden="true" hidden><span>🙂</span><span>😐</span><span>🙂</span><span>🧔</span><span>🙂</span><span>😐</span><span>👴</span><span>🙂</span><span>😐</span></div>
 
   <div class="row">
     <button class="ctl primary" id="playBtn">▶ PLAY</button>
     <button class="ctl" id="nextBtn">NEXT PLAY</button>
     <button class="ctl" id="speedBtn">SPEED 1x</button>
     <button class="ctl" id="liveBtn" aria-pressed="false" hidden>FOLLOW LIVE</button>
-    <button class="ctl" id="awardsBtn">🏆 AWARDS</button>
+    <button class="ctl" id="sndBtn" aria-expanded="false" aria-label="Sound volume">🔊</button>
+  </div>
+  <div id="soundBox" hidden>
+    <div class="vols">
+      <label class="vol">CROWD <input type="range" id="crowdVol" min="0" max="200" value="100" aria-label="Crowd volume"><b id="crowdVolN">100%</b></label>
+      <label class="vol">GAME SOUNDS <input type="range" id="gameVol" min="0" max="300" value="100" aria-label="Game sounds volume (pads, snap, whistle)"><b id="gameVolN">100%</b></label>
+    </div>
   </div>
 
-  <div class="row">
-    <select id="mode-select" aria-label="Announcer" hidden>
-      <option value="dad">Somebody's Dad</option>
-    </select>
-    <button class="ctl" id="annBtn" aria-pressed="true">DAD ON</button>
-    <button class="ctl" id="voiceBtn" aria-pressed="true">VOICE ON</button>
-    <button class="ctl" id="chatBtn">TALK: BIG PLAYS</button>
-    <button class="ctl" id="crowdBtn" aria-pressed="true">CROWD ON</button>
+
+  <!-- Retired controls (announcers and Dad were removed from the UI). Kept hidden so the old code still has something to attach to. -->
+  <div hidden>
+    <select id="mode-select" aria-label="Announcer"><option value="dad">Somebody's Dad</option></select>
+    <button id="annBtn" aria-pressed="false">DAD OFF</button>
+    <button id="voiceBtn" aria-pressed="true">VOICE ON</button>
+    <button id="chatBtn">TALK: BIG PLAYS</button>
+    <button id="crowdBtn" aria-pressed="true">CROWD ON</button>
+    <button id="awardsBtn">AWARDS</button>
   </div>
 
   <div id="booth">
-    <div id="portraits"></div>
-    <div id="box" aria-live="polite">Pick a game and an announcer, tap PLAY, and let the madness start.</div>
+    <div id="portraits" hidden></div>
+    <div id="box" aria-live="polite">Pick a game, then tap PLAY.</div>
   </div>
   <div id="feed"></div>
+  <div id="bubbleBar" role="status"></div>
+  <div id="meters">
+    <div class="meter"><span id="mChaosL">CHAOS · CALM</span><div class="track"><i id="mChaos"></i></div></div>
+    <div class="meter"><span id="mAngerL">FAN ANGER · CHILL</span><div class="track"><i id="mAnger"></i></div></div>
+    <div class="meter"><span id="mVibeL">VIBES · EVEN</span><div class="track vibe"><i id="mVibe"></i><b></b></div></div>
+  </div>
 
   <div id="scrub">
     <label for="slider" id="sliderLabel">Play 0 of 0</label>
@@ -785,7 +852,7 @@
   let idx = -1, playing = false, speed = 1, timer = null, waited = 0, popT = null;
   const CHAT_NAMES = ['BIG PLAYS', 'MORE', 'LOTS'], CHAT_MULT = [1, 3, 8];
   let chatLevel = 0;
-  let announcerOn = true, voiceOn = true, voiceUnlocked = false;
+  let announcerOn = false, voiceOn = true, voiceUnlocked = false;
   let currentEvent = null, eventState = 'post', followLive = false, liveTimer = null, waitingForLive = false;
   const lastLine = {}, sidelineSeen = [0, 0];
 
@@ -1063,6 +1130,7 @@
     placeScenery();
   }
   function drawPlay(p, animate, delay) {
+    DOTFX.clear();
     ROLE.off = p.o; ROLE.def = p.o === 'A' ? 'H' : 'A';
     dotsEl.dataset.off = p.o;
     ['A', 'H'].forEach(t => teamEls[t].forEach(el => el.classList.remove('main')));
@@ -1650,11 +1718,13 @@
 
   /* ---------- Crowd noise + whistle (synthesized, no audio files) ---------- */
   const CROWD = (function () {
-    let sfx = null, duckG = null, wbuf = null, ctx = null, master = null, amb = null, bp = null, on = true, hushT = null;
+    let cv = 1, gv = 1, crowdG = null, sfx = null, duckG = null, wbuf = null, ctx = null, master = null, amb = null, bp = null, on = true, hushT = null;
     function noiseBuf(sec) {
       const n = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
       let last = 0;
-      for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; last = (last + 0.04 * w) / 1.04; d[i] = last * 6; }
+      const F = Math.floor(ctx.sampleRate * 0.3), g = new Float32Array(n + F);
+      for (let i = 0; i < n + F; i++) { const w = Math.random() * 2 - 1; last = (last + 0.04 * w) / 1.04; g[i] = last * 6; }
+      for (let i = 0; i < n; i++) d[i] = i < F ? g[i] * (i / F) + g[n + i] * (1 - i / F) : g[i];   // end flows into start: no loop click
       return b;
     }
     function init() {
@@ -1663,12 +1733,12 @@
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         ctx = new AC();
         master = ctx.createGain(); master.gain.value = on ? 1.6 : 0;
-        const comp = ctx.createDynamicsCompressor(); sfx = ctx.createGain(); sfx.gain.value = 2.4; sfx.connect(master); duckG = ctx.createGain(); master.connect(duckG); duckG.connect(comp); comp.connect(ctx.destination);
+        const comp = ctx.createDynamicsCompressor(); sfx = ctx.createGain(); sfx.gain.value = 2.4 * gv; sfx.connect(master); crowdG = ctx.createGain(); crowdG.gain.value = cv; crowdG.connect(master); duckG = ctx.createGain(); master.connect(duckG); duckG.connect(comp); comp.connect(ctx.destination);
         wbuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate); const wd = wbuf.getChannelData(0); for (let i = 0; i < wd.length; i++) wd[i] = Math.random() * 2 - 1;
         const src = ctx.createBufferSource(); src.buffer = noiseBuf(3); src.loop = true;
         bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 600; bp.Q.value = 0.6;
         amb = ctx.createGain(); amb.gain.value = 0;
-        src.connect(bp); bp.connect(amb); amb.connect(master); src.start();
+        src.connect(bp); bp.connect(amb); amb.connect(crowdG); src.start();
         const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.15; lg.gain.value = 80;
         lfo.connect(lg); lg.connect(bp.frequency); lfo.start();
       } catch (e) { ctx = null; }
@@ -1694,7 +1764,7 @@
       const n = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
       o.type = type; o.frequency.setValueAtTime(f, n); if (f2) o.frequency.linearRampToValueAtTime(f2, n + secs);
       g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(vol, n + 0.04); g.gain.setValueAtTime(vol, n + secs - 0.08); g.gain.linearRampToValueAtTime(0, n + secs);
-      o.connect(g); g.connect(dest || master); o.start(n); o.stop(n + secs + 0.05);
+      o.connect(g); g.connect(dest || crowdG); o.start(n); o.stop(n + secs + 0.05);
       if (trem) {
         const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = trem; lg.gain.value = vol * 0.9;
         l.connect(lg); lg.connect(g.gain); l.start(n); l.stop(n + secs + 0.05);
@@ -1708,8 +1778,8 @@
       g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(0.001, n + secs);
       src.connect(fl); fl.connect(g); g.connect(sfx); src.start(n); src.stop(n + secs + 0.05);
     }
-    function hit(v) { blip(wbuf, 'lowpass', 300, 0.22, 1.4 * v); blip(wbuf, 'highpass', 2500, 0.07, 0.5 * v); }
-    function snap() { if (ctx && on) blip(wbuf, 'highpass', 1500, 0.06, 0.5); }
+    function hit(v) { blip(wbuf, 'lowpass', 300, 0.26, 1.4 * v); blip(wbuf, 'lowpass', 900, 0.14, 0.45 * v); }   // dull pad thud, no sharp high crack (that read as a tick)
+    function snap() { /* the snap tick was removed: it read as a constant ticking */ }
     function kick() { tone('sine', 140, 45, 0.18, 0.7, 0, sfx); blip(wbuf, 'lowpass', 500, 0.12, 0.6); }
     function duck(ms) {
       if (!ctx || !duckG) return;
@@ -1736,7 +1806,9 @@
       init: init, snap: snap, touch: touch, react: react, whistle: whistle, duck: duck,
       murmur: function () { burst(0.3, 2.5, 450, 550); },
       set: function (v) { on = v; if (master) master.gain.setTargetAtTime(v ? 1.6 : 0, ctx.currentTime, 0.1); if (v) { init(); touch(); } },
-      isOn: function () { return on; }
+      isOn: function () { return on; },
+      setCrowdVol: function (v) { cv = v; if (crowdG) crowdG.gain.setTargetAtTime(v, ctx.currentTime, 0.05); },
+      setGameVol: function (v) { gv = v; if (sfx) sfx.gain.setTargetAtTime(2.4 * v, ctx.currentTime, 0.05); }
     };
   })();
 
@@ -1872,26 +1944,31 @@
     return null;
   }
   const VAR = a => a[Math.floor(Math.random() * a.length)];
+  const lastPop = {};
+  function VARNR(key, arr) {
+    let w; for (let n = 0; n < 8; n++) { w = VAR(arr); if (w !== lastPop[key]) break; }
+    lastPop[key] = w; return w;
+  }
   function popFor(p, cat) {
     switch (p.k) {
-      case 'td': return [VAR(['TOUCHDOWN!', 'TOUCHDOWN!', 'SIX POINTS!', 'TOUCHDOWN!!']), 'gold'];
+      case 'td': return [VARNR('td', ['TOUCHDOWN!', 'TOUCHDOWN!', 'TOUCHDOWN!', 'SIX POINTS!', 'HE\'S IN!', 'BOOM! SIX!']), 'gold'];
       case 'safety': return ['SAFETY!', 'gold'];
-      case 'sack': return [VAR(['SACK!', 'SACK!', 'SACKED!', 'QB DOWN!']), 'red'];
-      case 'int': return [VAR(['INTERCEPTED!', 'PICKED OFF!', 'TURNOVER!']), 'red'];
-      case 'fumble': return [VAR(['FUMBLE!', 'LOOSE BALL!', 'TURNOVER!']), 'red'];
-      case 'fg': return [VAR(['FIELD GOAL!', 'IT\'S GOOD!', '3 POINTS!']), 'green'];
-      case 'fgmiss': return [VAR(['NO GOOD!', 'WIDE!', 'MISSED IT!']), 'red'];
-      case 'pen': return ['FLAG!', 'red'];
-      case 'punt': return ['PUNT!', 'white'];
+      case 'sack': return [VARNR('sack', ['SACK!', 'SACK!', 'SPLAT!', 'WHUMP!', 'QB DOWN!', 'FACE PLANT!', 'TIMBER!', 'GOTCHA!']), 'red'];
+      case 'int': return [VARNR('int', ['INTERCEPTED!', 'PICKED OFF!', 'YOINK!', 'NOPE!', 'MINE NOW!', 'TURNOVER!']), 'red'];
+      case 'fumble': return [VARNR('fumble', ['FUMBLE!', 'LOOSE BALL!', 'OOPS!', 'BUTTERFINGERS!', 'TURNOVER!']), 'red'];
+      case 'fg': return [VARNR('fg', ['FIELD GOAL!', 'IT\'S GOOD!', '3 POINTS!', 'RIGHT THROUGH!']), 'green'];
+      case 'fgmiss': return [VARNR('fgmiss', ['NO GOOD!', 'WIDE!', 'MISSED IT!', 'OOF!']), 'red'];
+      case 'pen': return [VARNR('pen', ['FLAG!', 'FLAG!', 'FLAG ON THE PLAY!', 'HANKY!']), 'red'];
+      case 'punt': return [VARNR('punt', ['PUNT!', 'BOOT!']), 'white'];
       case 'kickoff': return ['KICKOFF!', 'white'];
       case 'half': return ['HALFTIME!', 'gold'];
       case 'final': return ['FINAL!', 'gold'];
       case 'qend': return ['END OF Q' + p.q, 'white'];
-      case 'inc': return ['INCOMPLETE', 'white'];
+      case 'inc': return [VARNR('inc', ['INCOMPLETE', 'INCOMPLETE', 'NO CATCH', 'NOPE!']), 'white'];
     }
-    if (cat === 'big') return [VAR(['BIG PLAY!', 'BOOM!', 'LONG GAIN!', 'WOW!']), 'green'];
-    if (cat === 'first') return [VAR(['FIRST DOWN!', 'MOVE THE CHAINS!']), 'green'];
-    if (cat === 'stuffed') return [VAR(['STUFFED!', 'NO GAIN!', 'BIG STOP!']), 'red'];
+    if (cat === 'big') return [VARNR('big', ['BIG PLAY!', 'BOOM!', 'LONG GAIN!', 'WOW!', 'ZOOM!', 'GONE!']), 'green'];
+    if (cat === 'first') return [VARNR('first', ['FIRST DOWN!', 'MOVE THE CHAINS!', 'KEEP GOING!']), 'green'];
+    if (cat === 'stuffed') return [VARNR('stuffed', ['STUFFED!', 'NO GAIN!', 'BIG STOP!', 'BONK!', 'DENIED!', 'WALL!']), 'red'];
     return null;
   }
 
@@ -2045,6 +2122,7 @@
     if (pp) later(() => pop(pp[0], pp[1]), impactAt);
     later(() => CROWD.react(p.k, cat), impactAt);
     later(() => FUN.onImpact(p, i, cat, gain), impactAt);
+    later(() => DOTFX.end(p), preMs + actMs);
     later(() => FUN.preSnap(p), setupMs + cadMs * 0.4);
     if (p.k === 'final') later(() => FUN.awards(i), impactAt + 3500);
     if (['td', 'sack', 'int', 'fumble', 'safety'].indexOf(p.k) >= 0) later(shake, impactAt);
@@ -2136,7 +2214,7 @@
       $('mChaos').style.width = c + '%'; $('mAnger').style.width = a + '%';
       const vf = $('mVibe'); vf.style.width = Math.abs(v) / 2 + '%'; vf.style.left = (v >= 0 ? 50 - v / 2 : 50) + '%'; vf.style.background = v >= 0 ? 'var(--wolf)' : 'var(--gator)';
       $('mChaosL').textContent = 'CHAOS · ' + (c > 75 ? 'MAYHEM' : c > 45 ? 'WILD' : c > 20 ? 'SPICY' : 'CALM');
-      $('mAngerL').textContent = 'DAD ANGER · ' + (a > 75 ? 'PURPLE FACE' : a > 45 ? 'LOUD' : a > 20 ? 'GRUMBLY' : 'CHILL');
+      $('mAngerL').textContent = 'FAN ANGER · ' + (a > 75 ? 'PURPLE FACE' : a > 45 ? 'LOUD' : a > 20 ? 'GRUMBLY' : 'CHILL');
       $('mVibeL').textContent = 'VIBES · ' + (Math.abs(v) < 12 ? 'EVEN' : (v > 0 ? TEAMS.A.short : TEAMS.H.short) + ' RISING');
     }
     /* bubble strip */
@@ -2232,12 +2310,40 @@
       if (dm) L.push(['😵', 'MOST DOOMED QB', dm.name + ' (' + nm(dm.team) + '): ' + dm.s + (dm.s === 1 ? ' sack, ' : ' sacks, ') + dm.i + (dm.i === 1 ? ' pick' : ' picks') + '. Hug him.']);
       if (st.longest && st.longest.g >= 15) L.push(['💨', 'LONGEST PLAY', st.longest.name + ', ' + st.longest.g + ' yards. The defense is "still looking."']);
       L.push(['🏉', 'PYLON OF THE GAME', 'The ' + pick(['front-left', 'front-right', 'back-left', 'back-right']) + ' pylon, ' + nm(pick(['A', 'H'])) + ' end zone. Did nothing. Did it perfectly.']);
-      L.push(['👴', 'DAD\'S VERDICT', pick(['"I\'ve seen better. I\'ve seen worse. I need a nap."', '"Great game. Where did I park?"', '"My blood pressure has never been higher or happier."', '"Somebody tell my wife I\'ll be home later."'])]);
+      L.push(['👴', 'FAN\'S VERDICT', pick(['"I\'ve seen better. I\'ve seen worse. I need a nap."', '"Great game. Where did I park?"', '"My blood pressure has never been higher or happier."', '"Somebody tell my wife I\'ll be home later."'])]);
       const ul = $('awardList'); while (ul.firstChild) ul.removeChild(ul.firstChild);
       L.forEach(r => { const li = document.createElement('li'); const b = document.createElement('b'); b.textContent = r[0] + ' ' + r[1]; const s = document.createElement('span'); s.textContent = r[2]; li.appendChild(b); li.appendChild(s); ul.appendChild(li); });
       $('awards').hidden = false;
     }
     return { meters: meters, onImpact: onImpact, preSnap: preSnap, gag: gag, awards: awards, resetStands: resetStands, bubble: bubble };
+  })();
+
+  /* ---------- Dot personality: tiny visual jokes that only happen when the real play data says so ---------- */
+  const DOTFX = (function () {
+    let T = [], els = [];
+    function clear() { T.forEach(clearTimeout); T = []; els.forEach(e => e.classList.remove('squash', 'jig')); els = []; }
+    function nearest(team) {
+      let best = 0, bd = 1e9; const b = shown.ball;
+      shown[team].forEach((q, i) => { const d = Math.hypot(q.x - b.x, (q.y - b.y) * VY); if (d < bd) { bd = d; best = i; } });
+      return teamEls[team][best];
+    }
+    function mark(el, cls, ms) { if (!el) return; el.classList.add(cls); els.push(el); T.push(setTimeout(() => el.classList.remove(cls), ms)); }
+    function tag(el, e) {
+      if (!el) return;
+      const s = document.createElement('span'); s.className = 'emote'; s.textContent = e;
+      s.style.left = el.style.left; s.style.top = (parseFloat(el.style.top) - 10) + '%';
+      field.appendChild(s); setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 1500);
+    }
+    function end(p) {
+      if (speed >= 4 || REDUCE) return;
+      const off = ROLE.off, def = ROLE.def;
+      if (p.k === 'rush' || p.k === 'pass') mark(nearest(off), 'squash', 1000);          // tackled: the carrier gets flattened
+      else if (p.k === 'sack') { const q = nearest(off); mark(q, 'squash', 1400); tag(q, '💦'); }   // the QB gets squished and sweats
+      else if (p.k === 'int') mark(nearest(def), 'jig', 2200);                          // the defender who picked it off dances
+      else if (p.k === 'td') mark(nearest(off), 'jig', 2200);                           // the scorer dances too
+      else if (p.k === 'fumble') tag(nearest(off), '💫');
+    }
+    return { end: end, clear: clear };
   })();
 
   /* ---------- Playback ---------- */
@@ -2281,7 +2387,7 @@
     idx = -1; updateBoard(-1); updateSlider();
     drawPlay({ o: 'A', k: 'qend', a: 50, b: 50, dn: 0, ytg: 0 }, false);
     $('los').hidden = true; $('fdm').hidden = true;
-    box.textContent = 'Pick a game and an announcer, tap PLAY, and let the madness start.';
+    box.textContent = 'Pick a game, then tap PLAY.';
     feed.textContent = '';
     sidelineSeen[0] = 0; sidelineSeen[1] = 0;
     $('playBtn').textContent = '▶ PLAY';
@@ -2495,15 +2601,23 @@
   })();
   /* ---------- Remember settings (best effort, never required) ---------- */
   function saveSet() {
-    try { localStorage.setItem('unhinged-settings', JSON.stringify({ mode: $('mode-select').value, ann: announcerOn, voice: voiceOn, crowd: CROWD.isOn(), chat: chatLevel })); } catch (e) {}
+    try { localStorage.setItem('unhinged-settings', JSON.stringify({ mode: $('mode-select').value, ann: announcerOn, voice: voiceOn, crowd: CROWD.isOn(), chat: chatLevel, cvol: +$('crowdVol').value, gvol: +$('gameVol').value })); } catch (e) {}
   }
+  function applyVols() {
+    const c = +$('crowdVol').value, g = +$('gameVol').value;
+    $('crowdVolN').textContent = c + '%'; $('gameVolN').textContent = g + '%';
+    CROWD.setCrowdVol(c / 100); CROWD.setGameVol(g / 100);
+  }
+  $('sndBtn').addEventListener('click', () => { const sb = $('soundBox'); sb.hidden = !sb.hidden; $('sndBtn').setAttribute('aria-expanded', String(!sb.hidden)); });
+  ['crowdVol', 'gameVol'].forEach(id => { $(id).addEventListener('input', applyVols); $(id).addEventListener('change', saveSet); });
   function loadSet() {
     try {
       const v = JSON.parse(localStorage.getItem('unhinged-settings') || '{}');
       if (v.mode && Array.prototype.some.call($('mode-select').options, o => o.value === v.mode)) $('mode-select').value = v.mode;
       if (v.voice === false && voiceOn) $('voiceBtn').click();
       if (v.ann === false && announcerOn) $('annBtn').click();
-      if (v.crowd === false && CROWD.isOn()) $('crowdBtn').click();
+      if (v.cvol >= 0) { $('crowdVol').value = v.cvol; applyVols(); }
+      if (v.gvol >= 0) { $('gameVol').value = v.gvol; applyVols(); }
       if (v.chat > 0 && v.chat < CHAT_NAMES.length) { chatLevel = v.chat - 1; $('chatBtn').click(); }
     } catch (e) {}
   }
