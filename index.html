@@ -197,6 +197,13 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
 #soundBox{margin:0}
 #soundBox[hidden]{display:none}
 .vols{padding:2px}
+#field.flip #ezL{border-right:none;border-left:2px solid var(--fg)}
+#field.flip #ezR{border-left:none;border-right:2px solid var(--fg)}
+#field.flip #ezL span{transform:none}
+#field.flip #ezR span{transform:rotate(180deg)}
+#mini.flip{background:linear-gradient(90deg,rgba(234,0,217,.7) 8%,#2e7d32 8% 92%,rgba(113,28,145,.8) 92%)}
+#popStrip{position:relative}
+#flipBtn{position:absolute;right:0;top:50%;transform:translateY(-50%);width:34px;height:30px;border-radius:15px;border:2px solid var(--control-edge);background:var(--control);color:var(--fg);font-size:15px;line-height:1;padding:0;cursor:pointer;opacity:.8}
 #breakCard{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(135deg,#7a160f,#c2410c);text-align:center;padding:6px}
 #breakCard.show{display:flex}
 #breakCard .bcTop{font-family:var(--pixel);font-size:8px;color:#fff;opacity:.9;letter-spacing:1px}
@@ -206,7 +213,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
 #breakCard .bcBack{font-family:var(--pixel);font-size:9px;color:#fff;background:rgba(0,0,0,.45);padding:5px 8px;border-radius:4px;margin-top:2px}
 #breakCard .bcLbl{position:absolute;top:4px;right:6px;font:700 8px/1 system-ui,sans-serif;color:rgba(255,255,255,.85)}
 #gameSel{flex:1 1 150px}
-#weekSel{flex:0 0 auto}
+#weekSel,#leagueSel{flex:0 0 auto}
 #meters{display:none}
 #scrub{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 8px}
 #scrub label{grid-row:1;grid-column:1;text-align:left;font-size:11px}
@@ -222,6 +229,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   <h1>🏈 UNHINGED REPLAY 🏈</h1>
 
   <div class="row">
+    <select id="leagueSel" aria-label="League"><option value="nfl">NFL</option><option value="college">College</option></select>
     <select id="weekSel" aria-label="Week"></select>
     <select id="gameSel" aria-label="Game"><option value="sample">Sample game (made-up teams)</option></select>
   </div>
@@ -234,7 +242,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   </div>
   <div id="sit">SAMPLE GAME · TAP PLAY</div>
 
-  <div id="popStrip"><div id="overlay" data-tone="gold">KICKOFF!</div></div>
+  <div id="popStrip"><div id="overlay" data-tone="gold">KICKOFF!</div><button id="flipBtn" aria-label="Flip the field to match your TV" title="Flip the field">⇄</button></div>
   <div id="field">
     <div class="ez" id="ezL"><span id="ezLn"></span></div>
     <div class="ez" id="ezR"><span id="ezRn"></span></div>
@@ -321,7 +329,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   <div id="awards" hidden role="dialog" aria-label="Game awards"><div class="card"><h2>🏆 GAME AWARDS</h2><ul id="awardList"></ul><div class="row"><button class="ctl primary" id="awardClose">CLOSE</button></div></div></div>
 
   <div id="sponsor">Presented by <b>YOUR SPONSOR HERE</b> · family-friendly brands only</div>
-  <p class="fine">Scores, yardage and play descriptions come from a public play-by-play feed and can run a minute or more behind the TV. The dots are an animated illustration of each play, not real player tracking. Not affiliated with ESPN or the NFL.</p>
+  <p class="fine">Scores, yardage and play descriptions come from a public play-by-play feed and can run a minute or more behind the TV. The dots are an animated illustration of each play, not real player tracking. Not affiliated with ESPN, the NFL or the NCAA.</p>
 </div>
 
 <script id="espn">
@@ -417,7 +425,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       return NaN;
     }
 
-    var plays = [], lastEmit = null, prevH = 0, prevA = 0, pendH = 0, pendA = 0, curOff = 'A', seen = {};
+    var plays = [], lastEmit = null, prevH = 0, prevA = 0, pendH = 0, pendA = 0, curOff = 'A', seen = {}, pendBreak = false;
     var DOWNKINDS = ['rush', 'pass', 'inc', 'sack', 'pen', 'td', 'int', 'fumble', 'safety', 'fg', 'fgmiss', 'punt'];
 
     raw.forEach(function (it) {
@@ -425,6 +433,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       if (p.id !== undefined && p.id !== null) { if (seen[p.id]) return; seen[p.id] = 1; }
       var tt = String((p.type && (p.type.text || p.type.abbreviation)) || '').toLowerCase();
       var txt = String(p.text || p.shortText || '').replace(/\s+/g, ' ').trim();
+      if (/official timeout|two.?minute|media timeout|tv timeout/.test(tt)) pendBreak = true;   // a TV break comes right before the next play
       var period = num(p.period && p.period.number !== undefined ? p.period.number : p.period);
       if (!isFinite(period)) period = 1;
       var clock = p.clock && p.clock.displayValue !== undefined ? p.clock.displayValue : p.clock;
@@ -436,6 +445,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       if (isFinite(as)) prevA = as;
 
       var k = kindOf(tt, period);
+      if (k === 'fumble' && (/\(own\)/.test(tt) || p.isTurnover === false)) k = /sacked/i.test(txt) ? 'sack' : (/pass/i.test(txt) ? 'pass' : 'rush');   // the offense kept the ball: not a turnover
       if (k === 'xp' || k === 'skip' || k === null) {
         if (k === null || k === 'skip') rep.skipped[tt || '(no type)'] = (rep.skipped[tt || '(no type)'] || 0) + 1;
         if (dH > 0 || dA > 0) {
@@ -493,12 +503,15 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
 
       var out = { q: period, c: clock, o: o, k: k, a: r1(clamp(a)), b: r1(clamp(b)), dn: dn, ytg: ytg, t: txt, s: s, p: pts };
       var wcl = Date.parse(p.wallclock); if (isFinite(wcl)) out.w = wcl;   // when ESPN logged the play (real clock)
+      if (pendBreak) { out.br = true; pendBreak = false; }
       plays.push(out);
       lastEmit = out;
       rep.kinds[k] = (rep.kinds[k] || 0) + 1;
       if (!struct) curOff = recvSide || offSide;
     });
 
+    var minW = Infinity;
+    for (var qi = plays.length - 1; qi >= 0; qi--) { if (plays[qi].w !== undefined) { if (plays[qi].w > minW) plays[qi].w = minW; else minW = plays[qi].w; } }
     var lines = [];
     lines.push('Plays in feed: ' + rep.total + ' · shown: ' + plays.length);
     lines.push('Kinds: ' + Object.keys(rep.kinds).map(function (x) { return x + ' ' + rep.kinds[x]; }).join(', '));
@@ -521,10 +534,18 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+  const LEAGUES = { nfl: { path: 'nfl', core: 'nfl' }, college: { path: 'college-football', core: 'college-football' } };
+  let LEAGUE = 'nfl', API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl', CORE_LEAGUE = 'nfl';
+  function setLeague(l) {
+    if (!LEAGUES[l]) l = 'nfl';
+    LEAGUE = l; API = 'https://site.api.espn.com/apis/site/v2/sports/football/' + LEAGUES[l].path; CORE_LEAGUE = LEAGUES[l].core;
+    $('leagueSel').value = l;
+  }
   const FL = 8, FW = 84;                      // field starts 8% in and spans 84% of the width
   const cam = { cx: 50, z: 1, tcx: 50, tz: 1, follow: false, lead: 0 };      // the camera: center yard line and zoom
-  const xp = x => 50 + (x - cam.cx) * (FW / 100) * cam.z;
+  let viewFlip = false, userFlip = false;      // the field can be mirrored: teams switch ends after Q1 and Q3
+  const xp = x => 50 + (viewFlip ? -1 : 1) * (x - cam.cx) * (FW / 100) * cam.z;
+  const mx = x => viewFlip ? 100 - x : x;
   const clampX = x => Math.max(-9, Math.min(109, x));
   const KINDS = ['kickoff','rush','pass','inc','sack','int','fumble','punt','fg','fgmiss','td','pen','to','qend','half','final','safety'];
   const SCRIMMAGE = ['rush','pass','inc','sack'];
@@ -997,7 +1018,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       el.style.left = xp(clampX(x)) + '%'; el.style.top = clampY(y) + '%';
     }));
     ball.style.left = xp(clampX(shown.ball.x)) + '%'; ball.style.top = clampY(shown.ball.y) + '%';
-    $('miniBall').style.left = (8 + Math.max(0, Math.min(100, shown.ball.x)) * 0.84) + '%';
+    $('miniBall').style.left = (8 + mx(Math.max(0, Math.min(100, shown.ball.x))) * 0.84) + '%';
   }
   const markX = { los: null, fd: null, flag: null };
   function placeScenery() {
@@ -1005,14 +1026,20 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     lineEls.forEach(l => { const v = xp(l.x); l.el.style.left = v + '%'; l.el.style.display = (v < -2 || v > 102) ? 'none' : ''; });
     numEls.forEach(l => { const v = xp(l.x); l.el.style.left = v + '%'; l.el.style.display = (v < 2 || v > 98) ? 'none' : ''; });
     const ezL = $('ezL'), ezR = $('ezR'), x0 = xp(0), x1 = xp(100);
-    ezL.style.width = Math.max(0, Math.min(100, x0)) + '%'; ezL.style.display = x0 <= 0 ? 'none' : '';
-    ezR.style.left = Math.max(0, Math.min(100, x1)) + '%'; ezR.style.width = Math.max(0, 100 - x1) + '%'; ezR.style.display = x1 >= 100 ? 'none' : '';
+    const cl = v => Math.max(0, Math.min(100, v));
+    if (!viewFlip) {
+      ezL.style.left = '0'; ezL.style.right = 'auto'; ezL.style.width = cl(x0) + '%'; ezL.style.display = x0 <= 0 ? 'none' : '';
+      ezR.style.right = 'auto'; ezR.style.left = cl(x1) + '%'; ezR.style.width = Math.max(0, 100 - x1) + '%'; ezR.style.display = x1 >= 100 ? 'none' : '';
+    } else {
+      ezL.style.right = 'auto'; ezL.style.left = cl(x0) + '%'; ezL.style.width = Math.max(0, 100 - x0) + '%'; ezL.style.display = x0 >= 100 ? 'none' : '';
+      ezR.style.left = '0'; ezR.style.right = 'auto'; ezR.style.width = cl(x1) + '%'; ezR.style.display = x1 <= 0 ? 'none' : '';
+    }
     $('los').style.left = markX.los === null ? '' : xp(markX.los) + '%';
     $('fdm').style.left = markX.fd === null ? '' : xp(markX.fd) + '%';
     if (markX.flag !== null) $('flag').style.left = xp(markX.flag) + '%';
     $('miniLos').style.display = markX.los === null ? 'none' : ''; $('miniFd').style.display = (markX.fd === null || markX.fd < 0 || markX.fd > 100) ? 'none' : '';
-    if (markX.los !== null) $('miniLos').style.left = (8 + markX.los * 0.84) + '%';
-    if (markX.fd !== null) $('miniFd').style.left = (8 + markX.fd * 0.84) + '%';
+    if (markX.los !== null) $('miniLos').style.left = (8 + mx(markX.los) * 0.84) + '%';
+    if (markX.fd !== null) $('miniFd').style.left = (8 + mx(markX.fd) * 0.84) + '%';
     field.style.setProperty('--ds', (8 + 3.2 * Math.max(0, z - 1)).toFixed(1) + 'px');
   }
   let lastNow = 0;
@@ -1139,8 +1166,16 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     } else { markX.los = null; markX.fd = null; los.hidden = true; fdm.hidden = true; }
     placeScenery();
   }
-  function drawPlay(p, animate, delay) {
+  function applyView(p) {
+    const q = p.k === 'qend' ? p.q + 1 : p.q;          // the switch happens at the end of Q1 and Q3
+    const want = userFlip !== (q === 2 || q === 3);
+    if (want === viewFlip) return;
+    viewFlip = want; field.classList.toggle('flip', want); $('mini').classList.toggle('flip', want);
+    placeScenery(); draw(performance.now() / 1000);
+  }
+  function drawPlay(p, animate, delay, extra) {
     DOTFX.clear();
+    applyView(p);
     ROLE.off = p.o; ROLE.def = p.o === 'A' ? 'H' : 'A';
     dotsEl.dataset.off = p.o;
     ['A', 'H'].forEach(t => teamEls[t].forEach(el => el.classList.remove('main')));
@@ -1158,6 +1193,24 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
         const f0 = S[0].off[10], dd = p.o === 'A' ? 1 : -1;
         S.push({ t: -Math.min(800, dl * 0.45), dur: 650, off: { 10: P(f0.x - dd * 0.2, 58) }, tm: { off10: { curve: 0, ease: 'std' } } });
       }
+    }
+    const scrimP = ['rush', 'pass', 'inc', 'sack', 'td', 'int', 'fumble'].indexOf(p.k) >= 0 && p.dn > 0;
+    if (animate && S.length && scrimP && (extra || 0) >= 6000 && !REDUCE) {
+      // plenty of time before the snap: walk to a huddle, stand around, then line up
+      const H = P(clampX(p.a - dirP * 9), 50), f0 = S[0], hOff = {}, hDef = {};
+      for (let q = 0; q < 11; q++) {
+        const ang = q * 6.283 / 11;
+        hOff[q] = P(H.x + Math.cos(ang) * 2.4, clampY(50 + Math.sin(ang) * 2.4 / VY));
+        hDef[q] = P(clampX(f0.def[q].x + dirP * rnd(1.5, 4.5)), clampY(f0.def[q].y + rnd(-6, 6)));
+      }
+      S.push({ t: -dl, dur: 3200, off: hOff, def: hDef, ball: P(p.a, 50), carry: null, soft: true });
+      for (let tt = 5200; tt < dl - 4200; tt += rnd(2300, 3800)) {      // little shuffles while they wait
+        const so = {}, sd = {};
+        for (let n = 0; n < 3; n++) { const q = Math.floor(rnd(0, 11)); so[q] = P(hOff[q].x + rnd(-0.7, 0.7), clampY(hOff[q].y + rnd(-2, 2))); }
+        for (let n = 0; n < 3; n++) { const q = Math.floor(rnd(0, 11)); sd[q] = P(hDef[q].x + rnd(-1.2, 1.2), clampY(hDef[q].y + rnd(-3, 3))); }
+        S.push({ t: tt - dl, dur: 1200, off: so, def: sd });
+      }
+      S[0].t = -3000; S[0].dur = 2600; S[0].soft = false;
     }
     runSteps(S, !animate, dl);
     if (!animate) camSnap();
@@ -1973,7 +2026,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       case 'kickoff': return ['KICKOFF!', 'white'];
       case 'half': return ['HALFTIME!', 'gold'];
       case 'final': return ['FINAL!', 'gold'];
-      case 'qend': return ['END OF Q' + p.q, 'white'];
+      case 'qend': return [(p.q === 1 || p.q === 3) ? 'SWITCH ENDS!' : 'END OF Q' + p.q, 'white'];
       case 'inc': return [VARNR('inc', ['INCOMPLETE', 'INCOMPLETE', 'NO CATCH', 'NOPE!']), 'white'];
     }
     if (cat === 'big') return [VARNR('big', ['BIG PLAY!', 'BOOM!', 'LONG GAIN!', 'WOW!', 'ZOOM!', 'GONE!']), 'green'];
@@ -2076,7 +2129,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     return out;
   }
 
-  function show(i, scrub) {
+  function show(i, scrub, live) {
     hideBreak();
     idx = i;
     const p = PLAYS[i];
@@ -2116,10 +2169,12 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     const scrimSnap = ['rush', 'pass', 'inc', 'sack', 'int', 'fumble', 'td'].indexOf(p.k) >= 0 && p.dn > 0;
     const cad = (scrimSnap && speed <= 2) ? makeCadence() : null;
     const cadMs = cad ? cad.total / speed : 0;
-    const preMs = setupMs + cadMs;
-    const actMs = drawPlay(p, true, preMs * speed) / speed;
+    let extra = 0;      // live: spare time before the snap, so the play lands when it really happened
+    if (live && p.w && ['qend', 'final', 'to'].indexOf(p.k) < 0) extra = Math.max(0, Math.min(27000, p.w + LIVE_DELAY - Date.now() - cadMs - 3300));
+    const preMs = setupMs + cadMs + extra;
+    const actMs = drawPlay(p, true, preMs * speed, extra * speed) / speed;
     if (scrimSnap) later(() => CROWD.snap(), preMs);
-    if (cad) cad.segs.forEach(sg => later(() => { box.textContent = sg.box; say(sg.say, 'qb', 'qb', true); }, setupMs + sg.at / speed));
+    if (cad) cad.segs.forEach(sg => later(() => { box.textContent = sg.box; say(sg.say, 'qb', 'qb', true); }, setupMs + extra + sg.at / speed));
 
     // beat 1: the setup, while the teams line up
     if (plan.setup) { box.textContent = plan.setup.box; say(plan.setup.say, mode, plan.setup.who); }
@@ -2134,7 +2189,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     later(() => CROWD.react(p.k, cat), impactAt);
     later(() => FUN.onImpact(p, i, cat, gain), impactAt);
     later(() => DOTFX.end(p), preMs + actMs);
-    later(() => FUN.preSnap(p), setupMs + cadMs * 0.4);
+    later(() => FUN.preSnap(p), setupMs + extra + cadMs * 0.4);
     if (p.k === 'final') later(() => FUN.awards(i), impactAt + 3500);
     if (['td', 'sack', 'int', 'fumble', 'safety'].indexOf(p.k) >= 0) later(shake, impactAt);
 
@@ -2359,7 +2414,8 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
 
   /* ---------- Playback ---------- */
   /* ---------- Live delay: show plays about 75 seconds behind real time, at their real spacing ---------- */
-  const LIVE_DELAY = 75000, BREAK_GAP = 90000;     // delay behind real time; a gap this long between plays is a break
+  const BREAK_GAP = 90000, PRE_MAX = 34000;
+  let LIVE_DELAY = 120000;    // grows (never shrinks) if ESPN is slower than this cushion, so plays never arrive late and bunch up     // delay behind real time; a gap this long between plays is a break
   let breakT = null, breakI = null, breakDue = null;
   const delayedLive = () => followLive && PLAYS.some(p => p.w);
   function breakVisible() { return $('breakCard').classList.contains('show'); }
@@ -2397,11 +2453,12 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       const cur = PLAYS[idx], nx = PLAYS[idx + 1];
       if (nx) {
         const due = (nx.w || (cur && cur.w) || 0) + LIVE_DELAY, wait = due - Date.now();
-        base = Math.max(fresh ? 0 : (idx < 0 ? 800 : playMs), wait);
-        if (breakVisible()) breakDue = due;
-        else if (cur && cur.w && nx.w && nx.w - cur.w >= BREAK_GAP) {
+        base = Math.max(fresh ? 0 : (idx < 0 ? 800 : playMs), wait - PRE_MAX);    // start early enough to fill the gap with a huddle
+        const resumeAt = due - PRE_MAX;
+        if (breakVisible()) breakDue = resumeAt;
+        else if (nx.br || (cur && cur.w && nx.w && nx.w - cur.w >= BREAK_GAP)) {
           const startAt = fresh ? 0 : playMs + 1200;
-          if (base - startAt > 5000) breakT = setTimeout(() => showBreak(due), startAt);
+          if (base - startAt > 5000) breakT = setTimeout(() => showBreak(resumeAt), startAt);
         }
       }
     }
@@ -2422,7 +2479,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       if (liveActive()) { waitingForLive = true; setStatus('Caught up with the game. Waiting for the next play…'); edgeBreak(); return; }
       setPlaying(false); return;
     }
-    show(idx + 1, false);
+    show(idx + 1, false, delayedLive());
     if (idx + 1 >= PLAYS.length && !liveActive()) { setPlaying(false); return; }
     schedule();
   }
@@ -2478,17 +2535,25 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     } catch (e) { return ev.shortName || ev.name || ev.id; }
   }
   async function fetchGames() {
-    const sel = $('gameSel'), wk = $('weekSel').value;
+    const sel = $('gameSel'), wk = $('weekSel').value, col = LEAGUE === 'college';
+    const extra = col ? 'groups=80&limit=300' : '';
     setStatus('Loading games…');
     try {
-      const url = API + '/scoreboard' + (wk ? '?seasontype=2&week=' + wk : '');
-      const j = await getJSON(url);
-      const events = (j.events || []);
+      let j = await getJSON(API + '/scoreboard' + (wk ? '?seasontype=2&week=' + wk + (extra ? '&' + extra : '') : (extra ? '?' + extra : '')));
+      if (col && !wk) {      // college: the default view can be a single day, so ask for the whole week
+        try {
+          const e0 = (j.events || [])[0], wn = (j.week && j.week.number) || (e0 && e0.week && e0.week.number), st = (e0 && e0.season && e0.season.type) || (j.season && j.season.type) || 2;
+          if (wn) { const j2 = await getJSON(API + '/scoreboard?seasontype=' + st + '&week=' + wn + '&' + extra); if ((j2.events || []).length >= (j.events || []).length) j = j2; }
+        } catch (e) {}
+      }
+      const stOf = ev => (ev.status && ev.status.type && ev.status.type.state) || 'post';
+      const rank = { in: 0, post: 1, pre: 2 };
+      const events = (j.events || []).slice().sort((a, b) => ((rank[stOf(a)] || 0) - (rank[stOf(b)] || 0)) || String(a.date).localeCompare(String(b.date)));
       while (sel.options.length > 1) sel.remove(1);
       events.forEach(ev => {
         const o = document.createElement('option');
         o.value = ev.id; o.textContent = eventLabel(ev);
-        o.dataset.state = (ev.status && ev.status.type && ev.status.type.state) || 'post';
+        o.dataset.state = stOf(ev);
         sel.appendChild(o);
       });
       setStatus(events.length ? events.length + ' games found. Pick one.' : 'No games found for that week.', events.length ? 'ok' : '');
@@ -2502,7 +2567,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     let res = window.ESPN.adaptSummary(j), src = 'summary';
     if (!res.plays.length) {
       try {
-        const core = await getJSON('https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/' + id + '/competitions/' + id + '/plays?limit=1000');
+        const core = await getJSON('https://sports.core.api.espn.com/v2/sports/football/leagues/' + CORE_LEAGUE + '/events/' + id + '/competitions/' + id + '/plays?limit=1000');
         const r2 = window.ESPN.adaptSummary({ header: j.header, boxscore: j.boxscore, plays: core.items || [] });
         if (r2.plays.length) { res = r2; src = 'core plays feed'; }
       } catch (e) { res.report += '\nBackup plays feed failed: ' + e.message; }
@@ -2534,7 +2599,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       loadGame(res);
       $('liveBtn').hidden = state !== 'in';
       sit.textContent = 'TAP PLAY';
-      setStatus('Loaded ' + res.plays.length + ' plays. Tap PLAY' + (state === 'in' ? ', or FOLLOW LIVE to watch it unfold about a minute behind real time.' : '.') + scoreCheck(g0.j), 'ok');
+      setStatus('Loaded ' + res.plays.length + ' plays. Tap PLAY' + (state === 'in' ? ', or FOLLOW LIVE to watch it unfold about two minutes behind real time.' : '.') + scoreCheck(g0.j), 'ok');
     } catch (e) {
       setStatus('Could not load that game. ' + e.message, 'bad');
       if (!$('diag').value) $('diag').value = 'Load error: ' + e.message;
@@ -2551,9 +2616,11 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
         if (stt && stt.completed) { eventState = 'post'; setStatus('The game is over. Finishing the replay.', 'ok'); }
       } catch (e) {}
       if (res.plays.length > PLAYS.length) {
+        const nowT = Date.now();
+        for (let i = PLAYS.length; i < res.plays.length; i++) { const w = res.plays[i].w; if (w && nowT - w + 25000 > LIVE_DELAY) LIVE_DELAY = Math.min(240000, nowT - w + 25000); }
         PLAYS = res.plays; buildScores();
         slider.max = String(Math.max(0, PLAYS.length - 1)); updateSlider();
-        setStatus('Live: ' + PLAYS.length + ' plays so far. Updated ' + nowStr() + '. Plays show about a minute behind real time so they flow smoothly.' + scoreCheck(j), 'ok');
+        setStatus('Live: ' + PLAYS.length + ' plays so far. Updated ' + nowStr() + '. Plays show about two minutes behind real time so they flow smoothly.' + scoreCheck(j), 'ok');
         if (playing && waitingForLive) { waitingForLive = false; if (delayedLive()) schedule(true); else step(); }
       }
     } catch (e) { setStatus('Live update failed: ' + e.message, 'bad'); }
@@ -2578,12 +2645,14 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     if (playing) schedule();
   });
   $('restartBtn').addEventListener('click', restart);
+  $('flipBtn').addEventListener('click', () => { userFlip = !userFlip; applyView(idx >= 0 ? PLAYS[idx] : {}); saveSet(); });
   $('liveBtn').addEventListener('click', () => {
     unlockAll();
     if (followLive) { stopLive(); setPlaying(false); setStatus('Stopped following live.'); return; }
     followLive = true;
     $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBtn').textContent = 'LIVE: ON';
     const timed = PLAYS.some(p => p.w);
+    if (timed) { const newest = Math.max.apply(null, PLAYS.map(p => p.w || 0)); LIVE_DELAY = Math.max(120000, Math.min(240000, Date.now() - newest + 35000)); }
     if (PLAYS.length) {
       if (timed) {
         let k = -1; const now = Date.now();
@@ -2594,7 +2663,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     setPlaying(true);
     if (timed && idx + 1 < PLAYS.length) schedule(true);
     else { waitingForLive = true; if (timed) edgeBreak(); }
-    setStatus(timed ? 'Following live, about a minute behind real time so the plays flow smoothly.' : 'Following live. New plays will animate as they arrive.', 'ok');
+    setStatus(timed ? 'Following live, about two minutes behind real time so the plays flow smoothly.' : 'Following live. New plays will animate as they arrive.', 'ok');
     clearInterval(liveTimer); liveTimer = setInterval(pollLive, 15000);
     pollLive();
   });
@@ -2637,6 +2706,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
     if (!o || o.value === 'sample') { useSample(); setStatus('Sample game loaded.'); return; }
     loadEvent(o.value, o.dataset.state || 'post');
   });
+  $('leagueSel').addEventListener('change', () => { stopLive(); setPlaying(false); setLeague($('leagueSel').value); $('gameSel').value = 'sample'; useSample(); fetchGames(); saveSet(); });
   $('weekSel').addEventListener('change', () => { $('gameSel').value = 'sample'; useSample(); fetchGames(); });
   $('loadBtn').addEventListener('click', () => {
     msg.className = '';
@@ -2661,7 +2731,7 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
   })();
   /* ---------- Remember settings (best effort, never required) ---------- */
   function saveSet() {
-    try { localStorage.setItem('unhinged-settings', JSON.stringify({ mode: $('mode-select').value, ann: announcerOn, voice: voiceOn, crowd: CROWD.isOn(), chat: chatLevel, cvol: +$('crowdVol').value, gvol: +$('gameVol').value })); } catch (e) {}
+    try { localStorage.setItem('unhinged-settings', JSON.stringify({ mode: $('mode-select').value, ann: announcerOn, voice: voiceOn, crowd: CROWD.isOn(), chat: chatLevel, league: LEAGUE, flip: userFlip, cvol: +$('crowdVol').value, gvol: +$('gameVol').value })); } catch (e) {}
   }
   function applyVols() {
     const c = +$('crowdVol').value, g = +$('gameVol').value;
@@ -2676,6 +2746,8 @@ button.ctl{min-height:38px;padding:6px 10px;font-size:9px}
       if (v.mode && Array.prototype.some.call($('mode-select').options, o => o.value === v.mode)) $('mode-select').value = v.mode;
       if (v.voice === false && voiceOn) $('voiceBtn').click();
       if (v.ann === false && announcerOn) $('annBtn').click();
+      if (v.flip) { userFlip = true; applyView({}); }
+      if (v.league) setLeague(v.league);
       if (v.cvol >= 0) { $('crowdVol').value = v.cvol; applyVols(); }
       if (v.gvol >= 0) { $('gameVol').value = v.gvol; applyVols(); }
       if (v.chat > 0 && v.chat < CHAT_NAMES.length) { chatLevel = v.chat - 1; $('chatBtn').click(); }
